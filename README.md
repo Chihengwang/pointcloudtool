@@ -7,7 +7,6 @@ Basic function for point cloud
 * open3d
 * numpy
 * pillow
-
 --------------------------------------------------
 ### 主要實現的功能:
 
@@ -17,11 +16,14 @@ Basic function for point cloud
 >>* remove outlier兩種方法整合
 >>* join map程式碼測試(已經可以完成3d reconstruction)
 
+> 2019/9/23實現的功能:
+>> * 可以使用mask 去產生partial point cloud並且顯示出來
+>> * 另外下面測試的程式碼可以用downsizing 跟 removal去優化partial point cloud
 --------------------------------------------------
 
 ### TODOLIST:
 
-* 將mask的條件也加入point cloud 的產生
+* 將mask的條件也加入point cloud 的產生(V)
 * select down size的random產生方法實作
 * 整合進去restful api的程式碼裡面
 * join map的方法整合進去point_cloud_function.py裡面
