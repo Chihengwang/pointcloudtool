@@ -51,6 +51,10 @@ def color_and_depth_to_ply(rgb_file,depth_file,camera):
 """
 Mask+depth+color to partial point cloud
 讀入都是numpy array的值(因為是從realsense讀過來的)
+這裡因為depth是從nparray過來的所以mode上會從原本的I變成是I;16 也因此跟上面純粹用Image.open的結果不一樣
+
+return:
+list(for saving)),nparray(for dealing with data)
 """
 def mask_to_partial_pointcloud(color,depth,mask,camera):
     color_img = Image.fromarray(color.astype('uint8'), 'RGB')
@@ -64,8 +68,9 @@ def mask_to_partial_pointcloud(color,depth,mask,camera):
         raise Exception("Depth image is not in intensity format")
     # gray image 0-255
     if mask_img.mode != "L":
-        raise Exception("Depth image is not in intensity format")
+        raise Exception("Depth image is not in gray image format")
     points = []
+    xyz_points=[]
     #if the size of photo is (480,640) in opencv, then its size would be (640,480) in PIL 
     for v in range(color_img.size[1]):
         for u in range(color_img.size[0]):
@@ -76,8 +81,9 @@ def mask_to_partial_pointcloud(color,depth,mask,camera):
             if Z==0 or mask_img.getpixel((u,v))==0: continue
             X = (u - camera.cx) * Z / camera.fx
             Y = (v - camera.cy) * Z / camera.fy
+            xyz_points.append([X,Y,Z])
             points.append("%f %f %f %d %d %d 0\n"%(X,Y,Z,color[0],color[1],color[2]))
-    return points
+    return points,np.array(xyz_points)
 # =================================================
 # 存points 變成點雲文件
 def savePoints_to_ply(dirname,filename,points):
@@ -98,7 +104,9 @@ def savePoints_to_ply(dirname,filename,points):
     file.close()
 
 # ==========================================================
-
+"""
+這裡可以寫一些簡單的數據處理 跟 處理顯示
+"""
 def show_ply_file(dirname,filename):
     pcd = o3d.io.read_point_cloud(dirname+"/"+filename)
     o3d.visualization.draw_geometries([pcd])
@@ -109,8 +117,33 @@ def get_ply_file_points(dirname,filename):
     # print(pcd)
     points=np.asarray(pcd.points)
     return points
-
-
+# 上面的point cloud傳入的是numpy
+# 這邊傳入純粹就是x,y,z的值
+"""
+input: numpy or list
+output: x,y,z的平均
+"""
+def get_centroid_from_pc(points):
+    if(type(points)==list):
+        points=np.array(points)
+        points_mean=np.mean(points,axis=0)
+    else:
+        points_mean=np.mean(points,axis=0)
+    return points_mean[0],points_mean[1],points_mean[2]
+"""
+input:
+xyz_points:numpy
+"""
+def show_centriod(xyz_points):
+    x_mean,y_mean,z_mean=get_centroid_from_pc(xyz_points)
+    ax = plt.subplot(111, projection='3d')  # 创建一个三维的绘图工程
+    #  将数据点分成三部分画，在颜色上有区分度
+    ax.scatter(xyz_points[:,0], xyz_points[:,1], xyz_points[:,2], c='b',s=10)  # 绘制数据点
+    ax.scatter(x_mean, y_mean, z_mean, c='r',s=150)
+    ax.set_zlabel('Z')  # 坐标轴
+    ax.set_ylabel('Y')
+    ax.set_xlabel('X')
+    plt.show()
 # ===========================================================
 # Downsizing function list
 """
@@ -247,7 +280,8 @@ if __name__ == "__main__":
     color_img.size==depth_img.size==mask_img.size==(640,480)
     這邊的color藉由get_pixel可以得到裡面3個channel的值所以size那樣是正常的
     """
-    points=mask_to_partial_pointcloud(color,depth,mask,camera)
+    points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
+
     savePoints_to_ply('.','partial_point_cloud.ply',points)
     show_ply_file('.','partial_point_cloud.ply')
 
@@ -264,4 +298,6 @@ if __name__ == "__main__":
         'std_ratio':0.05
     }
     pc_after_removal=point_cloud_outlier_removal(down_pcd,function=function)
-    o3d.visualization.draw_geometries([pc_after_removal])
+    # o3d.visualization.draw_geometries([pc_after_removal])
+    print(np.asarray(pc_after_removal.points))
+    show_centriod(np.asarray(pc_after_removal.points))

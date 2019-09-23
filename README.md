@@ -19,6 +19,7 @@ Basic function for point cloud
 > 2019/9/23實現的功能:
 >> * 可以使用mask 去產生partial point cloud並且顯示出來
 >> * 另外下面測試的程式碼可以用downsizing 跟 removal去優化partial point cloud
+>> * 新增計算中心 以及呈現中心點的matplot方法
 --------------------------------------------------
 
 ### TODOLIST:
