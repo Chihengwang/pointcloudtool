@@ -7,6 +7,7 @@ Basic function for point cloud
 * open3d
 * numpy
 * pillow
+* matplotlib
 --------------------------------------------------
 ### 主要實現的功能:
 
@@ -20,6 +21,12 @@ Basic function for point cloud
 >> * 可以使用mask 去產生partial point cloud並且顯示出來
 >> * 另外下面測試的程式碼可以用downsizing 跟 removal去優化partial point cloud
 >> * 新增計算中心 以及呈現中心點的matplot方法
+
+> 2019/9/29修改及實現的功能:
+>> * 修改down sample & remove outlier原本只能傳送open3d:pointcloud的限制
+>>目前可以傳入numpy array &open3d:pointcloud
+>> * 新增一個testfile test_pca.py 可以demo pca在pc改變時principal axes的狀況(圖片)
+>> * 新增一個normalize的功能 平移到mean=0 同除一個最遠點的長度 可以將所有點scaling
 --------------------------------------------------
 
 ### TODOLIST:
@@ -28,6 +35,7 @@ Basic function for point cloud
 * select down size的random產生方法實作
 * 整合進去restful api的程式碼裡面
 * join map的方法整合進去point_cloud_function.py裡面
+* test_pca 裡面的功能 整合進point_cloud_function.py裡面
 
 
 ---------------------------------------------------

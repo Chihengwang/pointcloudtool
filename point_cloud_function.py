@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import cv2
 # ===================================================
 # Camera config
+# ===================================================
 """
 之後在restful api要用global去讀這個值
 """
@@ -19,6 +20,8 @@ class RGBDCamera():
 
 # ====================================================
 # 將color 跟 depth map轉成 points
+# 將color mask depth 轉成 partial point cloud
+# ====================================================
 '''
 這邊要記得傳入camera的config才能夠計算
 傳入的file是指 filename
@@ -84,7 +87,12 @@ def mask_to_partial_pointcloud(color,depth,mask,camera):
             xyz_points.append([X,Y,Z])
             points.append("%f %f %f %d %d %d 0\n"%(X,Y,Z,color[0],color[1],color[2]))
     return points,np.array(xyz_points)
-# =================================================
+# ==========================================================
+# Saving/read pc, basic manipulation to pc
+# ==========================================================
+"""
+這裡可以寫一些簡單的數據處理 跟 處理顯示
+"""
 # 存points 變成點雲文件
 def savePoints_to_ply(dirname,filename,points):
     file = open(dirname+'/'+filename,"w")
@@ -102,11 +110,6 @@ def savePoints_to_ply(dirname,filename,points):
         %s
         '''%(len(points),"".join(points)))
     file.close()
-
-# ==========================================================
-"""
-這裡可以寫一些簡單的數據處理 跟 處理顯示
-"""
 def show_ply_file(dirname,filename):
     pcd = o3d.io.read_point_cloud(dirname+"/"+filename)
     o3d.visualization.draw_geometries([pcd])
@@ -134,21 +137,41 @@ def get_centroid_from_pc(points):
 input:
 xyz_points:numpy
 """
-def show_centriod(xyz_points):
+def show_centriod(xyz_points,title_name):
     x_mean,y_mean,z_mean=get_centroid_from_pc(xyz_points)
     ax = plt.subplot(111, projection='3d')  # 创建一个三维的绘图工程
     #  将数据点分成三部分画，在颜色上有区分度
-    ax.scatter(xyz_points[:,0], xyz_points[:,1], xyz_points[:,2], c='b',s=10)  # 绘制数据点
-    ax.scatter(x_mean, y_mean, z_mean, c='r',s=150)
+    ax.scatter(xyz_points[:,0], xyz_points[:,1], xyz_points[:,2], c='b',s=1)  # 绘制数据点
+    ax.scatter(x_mean, y_mean, z_mean, c='r',s=10)
     ax.set_zlabel('Z')  # 坐标轴
     ax.set_ylabel('Y')
     ax.set_xlabel('X')
+    plt.title(title_name)
     plt.show()
+"""
+Normalizing the point cloud into the unit sphere
+refer to pointnet
+"""
+def normalize_point_cloud(points):
+    centroid = np.mean(points, axis=0)
+    points -= centroid
+    furthest_distance = np.max(np.sqrt(np.sum(abs(points)**2,axis=-1)))
+    points /= furthest_distance
+    return points
 # ===========================================================
 # Downsizing function list
+# ===========================================================
 """
 這邊提供兩種方式一種是voxel的方式 voxel size越大代表取的量越少
 參數method傳入字典的格式:
+注意這邊傳入的是open3d point cloud的形式 is_show參數選擇要不要看差異
+假如是要傳入numpy形式 要先轉成open3d的形式
+
+input:
+numpy or open3d point cloud
+output:
+open3d::pointcloud
+
 ex:
 function={
     'method':'voxel',
@@ -174,20 +197,30 @@ def point_cloud_down_sample_from_file(dirname,filename,function={}):
 def point_cloud_down_sample_from_pc(cloud,function={}):
     if len(function)<2:
         raise SystemExit('You should pass the third parameter as dict')
-
-    if(function['method']=='voxel'):
-        down_pcd = cloud.voxel_down_sample(voxel_size=function['voxel_size'])
-    elif(function['method']=='uniform'):
-        down_pcd = cloud.uniform_down_sample(every_k_points=function['every_k_points'])
+    if(type(cloud).__module__==np.__name__):
+        print("你傳入numpy array形式")
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(cloud)
+        if(function['method']=='voxel'):
+            down_pcd = pcd.voxel_down_sample(voxel_size=function['voxel_size'])
+        elif(function['method']=='uniform'):
+            down_pcd = pcd.uniform_down_sample(every_k_points=function['every_k_points'])
+        else:
+            raise SystemExit('Make sure the name of method is correct!!!')
     else:
-        raise SystemExit('Make sure the name of method is correct!!!')
+        if(function['method']=='voxel'):
+            down_pcd = cloud.voxel_down_sample(voxel_size=function['voxel_size'])
+        elif(function['method']=='uniform'):
+            down_pcd = cloud.uniform_down_sample(every_k_points=function['every_k_points'])
     return down_pcd
 # ===========================================================
 # Outlier removal function
+# ===========================================================
 """
 Statistical outlier removal
 Radius outlier removal
-注意這邊傳入的是point cloud的形式 is_show參數選擇要不要看差異
+注意這邊傳入的是open3d point cloud的形式 is_show參數選擇要不要看差異
+假如是要傳入numpy形式 要先轉成open3d的形式
 ex:
 function={
     'method':'statistical',
@@ -210,23 +243,42 @@ def display_inlier_outlier(cloud, ind,is_show):
         inlier_cloud.paint_uniform_color([0.8, 0.8, 0.8])
         o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud])
     return inlier_cloud
+"""
+這邊的removal 用到的是open3d裡面的outlier removal 所以
+return 的形式會是pcd的object
+因此要把點取出來的話要用np.asarray(pc_after_removal.points)
+將points的array用np的方式取出來
 
+output:
+open3d:pointcloud
+"""
 def point_cloud_outlier_removal(cloud,is_show=False,function={}):
     if len(function)==0:
         raise SystemExit('You should pass the third parameter as dict')
+    if(type(cloud).__module__==np.__name__):
+        print("你傳入numpy array形式")
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(cloud)      
+        if(function['method']=='statistical'):
+            cl, ind = pcd.remove_statistical_outlier(nb_neighbors=function['nb_neighbors'],std_ratio=function['std_ratio'])
+        elif(function['method']=='radius'):
+            cl, ind = pcd.remove_radius_outlier(nb_points=function['nb_points'], radius=function['radius'])
 
-    if(function['method']=='statistical'):
-        cl, ind = cloud.remove_statistical_outlier(nb_neighbors=function['nb_neighbors'],std_ratio=function['std_ratio'])
-    elif(function['method']=='radius'):
-        cl, ind = cloud.remove_radius_outlier(nb_points=function['nb_points'], radius=function['radius'])
-
-    pc_after_removal=display_inlier_outlier(cloud, ind,is_show)
+        pc_after_removal=display_inlier_outlier(pcd, ind,is_show)
+    # 傳入open3d 的point cloud 形式
+    else:
+        if(function['method']=='statistical'):
+            cl, ind = cloud.remove_statistical_outlier(nb_neighbors=function['nb_neighbors'],std_ratio=function['std_ratio'])
+        elif(function['method']=='radius'):
+            cl, ind = cloud.remove_radius_outlier(nb_points=function['nb_points'], radius=function['radius'])
+        pc_after_removal=display_inlier_outlier(cloud, ind,is_show)
     return pc_after_removal
 # ===========================================================
 if __name__ == "__main__":
     # 當前目錄就只要傳入'.'即可
-    # show_ply_file('dataset','output.ply')
-
+    # show_ply_file('.','banana_wo_partial.ply')
+    show_ply_file('.','banana.ply')
+    # show_ply_file('.','output.ply')
     # 如何將registed pair 轉成 點雲形式並儲存
     # depth map colorimg to point clouds
     cx = 316.001
@@ -235,29 +287,28 @@ if __name__ == "__main__":
     fy = 616.819
     scalingfactor = 0.0010000000474974513
     camera=RGBDCamera(cx,cy,fx,fy,scalingfactor)
-    # depth_file='./dataset/depth.png'
-    # rgb_file='./dataset/color.png'
-    # ply_file='./dataset/output2.ply'
-    # points=color_and_depth_to_ply(rgb_file,depth_file,camera)
-    # savePoints_to_ply('.','test.ply',points)
-    # show_ply_file('.','test.ply')
+    depth_file='./dataset/depth.png'
+    rgb_file='./dataset/color.png'
 
+    points=color_and_depth_to_ply(rgb_file,depth_file,camera)
+    savePoints_to_ply('.','banana_wo_partial.ply',points)
+    # show_ply_file('.','banana_wo_partial.ply')
     # 如何使用down sample
     # function={
-    #     'method':'voxel',
-    #     'voxel_size':0.01
+    #     'method':'uniform',
+    #     'every_k_points':8
     # }
-    # down_pcd=point_cloud_down_sample_from_file('.','test.ply',function=function)
+    # down_pcd=point_cloud_down_sample_from_file('.','banana.ply',function=function)
     # o3d.visualization.draw_geometries([down_pcd])
 
     # 如何使用removal
     # function={
     #     'method':'statistical',
-    #     'nb_neighbors':20,
-    #     'std_ratio':2.0
+    #     'nb_neighbors':5,
+    #     'std_ratio':0.001
     # }
-    # pcd = o3d.io.read_point_cloud('test.ply')
-    # pc_after_removal=point_cloud_outlier_removal(pcd,is_show=False,function=function)
+
+    # pc_after_removal=point_cloud_outlier_removal(down_pcd,function=function)
     # o3d.visualization.draw_geometries([pc_after_removal])
 
     # 2019/9/23 testing completed
@@ -282,22 +333,35 @@ if __name__ == "__main__":
     """
     points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
 
-    savePoints_to_ply('.','partial_point_cloud.ply',points)
-    show_ply_file('.','partial_point_cloud.ply')
+    savePoints_to_ply('.','banana.ply',points)
+    # show_ply_file('.','banana.ply')
 
     # 對partial point cloud做 remove outlier看效果(加上down sizing的效果)
-    pcd = o3d.io.read_point_cloud('partial_point_cloud.ply')
+    pcd = o3d.io.read_point_cloud('banana.ply')
+    # print(type(pcd).__module__)
+    # print(type(np.asarray(pcd.points)).__module__)
     function={
         'method':'uniform',
         'every_k_points':8
     }
-    down_pcd=point_cloud_down_sample_from_pc(pcd,function)
+    # down_pcd=point_cloud_down_sample_from_pc(pcd,function)
+    # 測試傳入numpy
+    down_pcd=point_cloud_down_sample_from_pc(np.asarray(pcd.points),function)
+    print(down_pcd)
     function={
         'method':'statistical',
-        'nb_neighbors':10,
-        'std_ratio':0.05
+        'nb_neighbors':3,
+        'std_ratio':0.01
     }
-    pc_after_removal=point_cloud_outlier_removal(down_pcd,function=function)
+    pc_after_removal=point_cloud_outlier_removal(np.asarray(down_pcd.points),function=function)
+    o3d.io.write_point_cloud("pc_after_removal.ply", pc_after_removal)
+    print(pc_after_removal)
     # o3d.visualization.draw_geometries([pc_after_removal])
-    print(np.asarray(pc_after_removal.points))
-    show_centriod(np.asarray(pc_after_removal.points))
+    # print(np.asarray(pc_after_removal.points))
+    
+    removed_pc=np.asarray(pc_after_removal.points)
+    norm_removed_pc=normalize_point_cloud(removed_pc.copy())
+    show_centriod(np.asarray(down_pcd.points),'Sampling')
+    show_centriod(np.asarray(pc_after_removal.points),'Removal')
+    show_centriod(norm_removed_pc,'Normalization')
+    
