@@ -27,6 +27,12 @@ Basic function for point cloud
 >>目前可以傳入numpy array &open3d:pointcloud
 >> * 新增一個testfile test_pca.py 可以demo pca在pc改變時principal axes的狀況(圖片)
 >> * 新增一個normalize的功能 平移到mean=0 同除一個最遠點的長度 可以將所有點scaling
+
+> 2019/10/3修改及實現的功能:
+>> * 將cal_pca 功能新增進去point_cloud_function.py裡面 
+>> * 新增一個show result的folder來放置一些出圖的function 或script
+>> 將test_pca.py改成display_pca.py
+
 --------------------------------------------------
 
 ### TODOLIST:
@@ -35,7 +41,7 @@ Basic function for point cloud
 * select down size的random產生方法實作
 * 整合進去restful api的程式碼裡面
 * join map的方法整合進去point_cloud_function.py裡面
-* test_pca 裡面的功能 整合進point_cloud_function.py裡面
+* test_pca 裡面的功能 整合進point_cloud_function.py裡面(V)
 
 
 ---------------------------------------------------

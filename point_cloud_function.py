@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import cv2
+from sklearn.decomposition import PCA
 # ===================================================
 # Camera config
 # ===================================================
@@ -274,10 +275,45 @@ def point_cloud_outlier_removal(cloud,is_show=False,function={}):
         pc_after_removal=display_inlier_outlier(cloud, ind,is_show)
     return pc_after_removal
 # ===========================================================
+# The tool to analyze the shape of the point cloud
+"""
+cal_pca's parameters
+point_cloud: numpy array type
+is_show: initially False to display the result of the point cloud and show the vectors in figure.
+desired_num_of_feature: we set up as three because we analyze the shape of point cloud,
+which contains three dimensions (x,y,z).
+
+return:
+first: principal axes of pointcloud
+second: 
+singular values.
+"""
+def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3):
+    pca = PCA(n_components=desired_num_of_feature)
+    pca.fit(point_cloud)
+    # print("Principal vectors: ",pca.components_)
+    # print("Singular values: ",pca.explained_variance_)
+    if is_show:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_xlabel('X Label(unit:m)')
+        ax.set_ylabel('Y Label(unit:m)')
+        ax.set_zlabel('Z Label(unit:m)')
+        plt.title("pca demo")
+        ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
+        xm,ym,zm=get_centroid_from_pc(point_cloud)
+        ax.scatter(xm, ym, zm, c='r',s=10)
+        discount=1
+        for length, vector in zip(pca.explained_variance_, pca.components_):
+            ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=0.05*discount)
+            discount/=2
+        plt.show()
+    return pca.components_,pca.explained_variance_
+# ===========================================================
 if __name__ == "__main__":
     # 當前目錄就只要傳入'.'即可
     # show_ply_file('.','banana_wo_partial.ply')
-    show_ply_file('.','banana.ply')
+    # show_ply_file('.','banana.ply')
     # show_ply_file('.','output.ply')
     # 如何將registed pair 轉成 點雲形式並儲存
     # depth map colorimg to point clouds
@@ -361,7 +397,11 @@ if __name__ == "__main__":
     
     removed_pc=np.asarray(pc_after_removal.points)
     norm_removed_pc=normalize_point_cloud(removed_pc.copy())
-    show_centriod(np.asarray(down_pcd.points),'Sampling')
-    show_centriod(np.asarray(pc_after_removal.points),'Removal')
-    show_centriod(norm_removed_pc,'Normalization')
+    # show_centriod(np.asarray(down_pcd.points),'Sampling')
+    # show_centriod(np.asarray(pc_after_removal.points),'Removal')
+    # show_centriod(norm_removed_pc,'Normalization')
     
+    # =================================================
+    # test pca function
+    is_show=True
+    vectors,vals=cal_pca(removed_pc,is_show)
