@@ -8,6 +8,8 @@ Basic function for point cloud
 * numpy
 * pillow
 * matplotlib
+* sklearn
+* scipy
 --------------------------------------------------
 ### 主要實現的功能:
 
@@ -33,15 +35,22 @@ Basic function for point cloud
 >> * 新增一個show result的folder來放置一些出圖的function 或script
 >> 將test_pca.py改成display_pca.py
 
+> 2019/10/4修改及實現的功能:
+>> * 將join map功能新增進去point_cloud_function.py裡面 
+>> * 新增座標轉換功能 quaterion to transformation matrix 的用法
+>> * 測試了import 子目錄的module問題(要將util的搜尋層級加入sys.path裡面才能work)
+>> 此外 import 子子目錄的py檔案也只要使用相對路徑 `from testfile.test import *` 即可使用
+>> 在工作目錄下要使用`sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "child_dir")))`
 --------------------------------------------------
 
 ### TODOLIST:
 
 * 將mask的條件也加入point cloud 的產生(V)
+* join map的方法整合進去point_cloud_function.py裡面(V)
+* test_pca 裡面的功能 整合進point_cloud_function.py裡面(V)
 * select down size的random產生方法實作
 * 整合進去restful api的程式碼裡面
-* join map的方法整合進去point_cloud_function.py裡面
-* test_pca 裡面的功能 整合進point_cloud_function.py裡面(V)
+* 將join map function加上mask 去實作
 
 
 ---------------------------------------------------

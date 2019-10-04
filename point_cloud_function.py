@@ -5,6 +5,9 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import cv2
 from sklearn.decomposition import PCA
+from scipy.spatial.transform import Rotation as R
+from testfile.test import *
+
 # ===================================================
 # Camera config
 # ===================================================
@@ -18,7 +21,64 @@ class RGBDCamera():
         self.fx=focalx
         self.fy=focaly
         self.scalingfactor=scalingfactor
-
+# ====================================================
+# 座標轉換功能
+"""
+Quaterion格式:(x,y,z,qx,qy,qz,qw) as list
+Transformation matrix: 4x4 as list
+ex:
+[
+    1 0 0 1,
+    0 1 0 2,
+    0 0 1 3,
+    0 0 0 1
+]
+"""
+def quaterion_to_tfMatrix(quaterion):
+    if(len(quaterion)!=7):
+        raise Exception("Make sure your format can fit what we provide.")
+    t_matrix=np.zeros((4,4))
+    translation_vector=np.array(quaterion[:3])
+    r = R.from_quat(quaterion[3:])
+    r_matrix=r.as_dcm()
+    t_matrix[0:3,0:3]=r_matrix
+    t_matrix[0:3,3]=translation_vector.T
+    t_matrix[3,:]=np.array([0,0,0,1])
+    return t_matrix
+# ====================================================
+# Join map function
+# ====================================================
+"""
+這邊傳入pose_list,color_list,depth_list
+pose_list: must be transformation matrix type.
+color_list: rgb image
+depth_list: depth image
+這邊的color & depth 不能是numpy array 一定要是用Image這個套件讀取出來的格式才行
+"""
+def join_map(pose_list,color_list,depth_list,camera):
+    if(len(pose_list)!=len(color_list) or len(pose_list)!=len(depth_list)):
+        raise Exception("Color and depth image do not have the same resolution, or the number of photos do not match the num of pose!")
+    points=[]
+    # print(len(pose_list))
+    for i in range(len(pose_list)):
+        rgb = color_list[i]
+        depth = depth_list[i]
+        # 這邊的v=480 u=640
+        for v in range(rgb.size[1]):
+            for u in range(rgb.size[0]):
+                color = rgb.getpixel((u,v))
+                Z = depth.getpixel((u,v)) * camera.scalingfactor
+                if Z==0: continue
+                X = (u - camera.cx) * Z / camera.fx
+                Y = (v - camera.cy) * Z / camera.fy
+                # 這個地方注意是做作標轉換的地方
+                # ======================================
+                point_in_camera=np.array([X,Y,Z,1])
+                world_point=pose_list[i].dot(point_in_camera)
+                # ======================================
+                points.append("%f %f %f %d %d %d 0\n"%(world_point[0],world_point[1],world_point[2],color[0],color[1],color[2]))
+    return points
+ 
 # ====================================================
 # 將color 跟 depth map轉成 points
 # 將color mask depth 轉成 partial point cloud
@@ -276,6 +336,7 @@ def point_cloud_outlier_removal(cloud,is_show=False,function={}):
     return pc_after_removal
 # ===========================================================
 # The tool to analyze the shape of the point cloud
+# ===========================================================
 """
 cal_pca's parameters
 point_cloud: numpy array type
@@ -309,6 +370,10 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3):
             discount/=2
         plt.show()
     return pca.components_,pca.explained_variance_
+# ==========================================================
+# ignore this one
+def perform_hello_test():
+    hello_test()
 # ===========================================================
 if __name__ == "__main__":
     # 當前目錄就只要傳入'.'即可
@@ -367,41 +432,82 @@ if __name__ == "__main__":
     color_img.size==depth_img.size==mask_img.size==(640,480)
     這邊的color藉由get_pixel可以得到裡面3個channel的值所以size那樣是正常的
     """
-    points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
+    # points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
 
-    savePoints_to_ply('.','banana.ply',points)
+    # savePoints_to_ply('.','banana.ply',points)
     # show_ply_file('.','banana.ply')
 
     # 對partial point cloud做 remove outlier看效果(加上down sizing的效果)
-    pcd = o3d.io.read_point_cloud('banana.ply')
+    # pcd = o3d.io.read_point_cloud('banana.ply')
     # print(type(pcd).__module__)
     # print(type(np.asarray(pcd.points)).__module__)
-    function={
-        'method':'uniform',
-        'every_k_points':8
-    }
+    # function={
+    #     'method':'uniform',
+    #     'every_k_points':8
+    # }
     # down_pcd=point_cloud_down_sample_from_pc(pcd,function)
     # 測試傳入numpy
-    down_pcd=point_cloud_down_sample_from_pc(np.asarray(pcd.points),function)
-    print(down_pcd)
-    function={
-        'method':'statistical',
-        'nb_neighbors':3,
-        'std_ratio':0.01
-    }
-    pc_after_removal=point_cloud_outlier_removal(np.asarray(down_pcd.points),function=function)
-    o3d.io.write_point_cloud("pc_after_removal.ply", pc_after_removal)
-    print(pc_after_removal)
+    # down_pcd=point_cloud_down_sample_from_pc(np.asarray(pcd.points),function)
+    # print(down_pcd)
+    # function={
+    #     'method':'statistical',
+    #     'nb_neighbors':3,
+    #     'std_ratio':0.01
+    # }
+    # pc_after_removal=point_cloud_outlier_removal(np.asarray(down_pcd.points),function=function)
+    # o3d.io.write_point_cloud("pc_after_removal.ply", pc_after_removal)
+    # print(pc_after_removal)
     # o3d.visualization.draw_geometries([pc_after_removal])
     # print(np.asarray(pc_after_removal.points))
     
-    removed_pc=np.asarray(pc_after_removal.points)
-    norm_removed_pc=normalize_point_cloud(removed_pc.copy())
+    # removed_pc=np.asarray(pc_after_removal.points)
+    # norm_removed_pc=normalize_point_cloud(removed_pc.copy())
     # show_centriod(np.asarray(down_pcd.points),'Sampling')
     # show_centriod(np.asarray(pc_after_removal.points),'Removal')
     # show_centriod(norm_removed_pc,'Normalization')
     
     # =================================================
     # test pca function
-    is_show=True
-    vectors,vals=cal_pca(removed_pc,is_show)
+    # =================================================
+    # is_show=True
+    # vectors,vals=cal_pca(removed_pc,is_show)
+
+    # =================================================
+    # test join map function
+    # =================================================
+    """
+    provide you with testing data as camera2 to perform 3d-reconstruction!
+    you need to be aware of that this testing code use Image.open as image-reading mode.
+    """
+    # cx = 325.5
+    # cy = 253.5
+    # fx = 518.0
+    # fy = 519.0
+    # scalingfactor = 1/1000.0
+    # camera2=RGBDCamera(cx,cy,fx,fy,scalingfactor)
+    # ply_file='output.ply'
+    # pose_file_name='pose.txt'
+    # depth_list=[]
+    # color_list=[]
+    # pose_list=[]
+    # for i in range(5):
+    #     depth = Image.open('./depth/'+str(i+1)+'.pgm')
+    #     rgb = Image.open('./color/'+str(i+1)+'.png')
+    #     depth_list.append(depth)
+    #     color_list.append(rgb)
+    # ## Open file
+    # fp = open(pose_file_name, "r")
+    # # 變數 lines 會儲存 filename.txt 的內容
+    # lines = fp.readlines()
+    # # close file
+    # fp.close()
+    # for i in range(len(lines)):
+    #     split_term=lines[i].split()
+    #     pose_list.append(quaterion_to_tfMatrix(split_term))
+    # savePoints_to_ply('.',ply_file,join_map(pose_list,color_list,depth_list,camera2))
+    # show_ply_file('.',ply_file)
+
+    # ============================================================================
+    # 測試module import 問題
+    perform_hello_test()
+    # ============================================================================
