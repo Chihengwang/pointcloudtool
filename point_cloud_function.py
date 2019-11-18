@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import cv2
 from sklearn.decomposition import PCA
 from scipy.spatial.transform import Rotation as R
-from testfile.test import *
+# from testfile.test import *
 
 # ===================================================
 # Camera config
@@ -78,7 +78,7 @@ def join_map(pose_list,color_list,depth_list,camera):
                 # ======================================
                 points.append("%f %f %f %d %d %d 0\n"%(world_point[0],world_point[1],world_point[2],color[0],color[1],color[2]))
     return points
- 
+
 # ====================================================
 # 將color 跟 depth map轉成 points
 # 將color mask depth 轉成 partial point cloud
@@ -147,6 +147,52 @@ def mask_to_partial_pointcloud(color,depth,mask,camera):
             Y = (v - camera.cy) * Z / camera.fy
             xyz_points.append([X,Y,Z])
             points.append("%f %f %f %d %d %d 0\n"%(X,Y,Z,color[0],color[1],color[2]))
+    return points,np.array(xyz_points)
+"""
+Mask版本的join map
+MaskRCNN出來的Mask存成list
+pose_list: must be transformation matrix type.
+color_list: rgb image
+depth_list: depth image
+mask_list: mask image
+======================================================
+傳進去的List都需要用Image的套件去開才行
+但因為是用realsense讀入，所以都是走opencv的格式 要轉成
+color=cv2.imread('./dataset/color.png')
+# brg to rgb
+color=color[...,::-1]
+depth=cv2.imread('./dataset/depth.png',cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+mask=cv2.imread('./dataset/mask.png',cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+color_img = Image.fromarray(color.astype('uint8'), 'RGB')
+depth_img = Image.fromarray(depth)
+mask_img = Image.fromarray(mask)
+======================================================
+Return ply type points,points(np type)
+"""
+def join_map_with_mask(pose_list,color_list,depth_list,mask_list,camera):
+    if(len(pose_list)!=len(color_list) or len(pose_list)!=len(depth_list) or len(pose_list)!=len(mask_list)):
+        raise Exception("Color and depth image do not have the same resolution, or the number of photos do not match the num of pose!")
+    points=[]
+    xyz_points=[]
+    # print(len(pose_list))
+    for i in range(len(pose_list)):
+        rgb = color_list[i]
+        depth = depth_list[i]
+        # 這邊的v=480 u=640
+        for v in range(rgb.size[1]):
+            for u in range(rgb.size[0]):
+                color = rgb.getpixel((u,v))
+                Z = depth.getpixel((u,v)) * camera.scalingfactor
+                if Z==0 or mask_list[i].getpixel((u,v))==0: continue
+                X = (u - camera.cx) * Z / camera.fx
+                Y = (v - camera.cy) * Z / camera.fy
+                # 這個地方注意是做作標轉換的地方
+                # ======================================
+                point_in_camera=np.array([X,Y,Z,1])
+                world_point=pose_list[i].dot(point_in_camera)
+                # ======================================
+                xyz_points.append([world_point[0],world_point[1],world_point[2]])
+                points.append("%f %f %f %d %d %d 0\n"%(world_point[0],world_point[1],world_point[2],color[0],color[1],color[2]))
     return points,np.array(xyz_points)
 # ==========================================================
 # Saving/read pc, basic manipulation to pc
@@ -349,7 +395,7 @@ first: principal axes of pointcloud
 second: 
 singular values.
 """
-def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3):
+def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo"):
     pca = PCA(n_components=desired_num_of_feature)
     pca.fit(point_cloud)
     # print("Principal vectors: ",pca.components_)
@@ -360,16 +406,71 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3):
         ax.set_xlabel('X Label(unit:m)')
         ax.set_ylabel('Y Label(unit:m)')
         ax.set_zlabel('Z Label(unit:m)')
-        plt.title("pca demo")
+        plt.title(title)
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
         ax.scatter(xm, ym, zm, c='r',s=10)
         discount=1
         for length, vector in zip(pca.explained_variance_, pca.components_):
-            ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=0.05*discount)
+            ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
             discount/=2
         plt.show()
     return pca.components_,pca.explained_variance_
+# ==========================================================
+# Manipulation of point cloud
+# ==========================================================
+"""
+Rotation point cloud through z-axis：
+Jitter point cloud：
+Adding some noise into point cloud.
+"""
+def rotate_point_cloud_z(point_cloud):
+    """ Randomly rotate the point clouds to augument the dataset
+        rotation is per shape based along up direction
+        Input:
+          Nx3 array, point clouds
+        Return:
+          Nx3 array, point clouds
+    """
+    rotated_data = np.zeros(point_cloud.shape, dtype=np.float32)
+    rotation_angle = np.random.uniform() * 2 * np.pi
+    cosval = np.cos(rotation_angle)
+    sinval = np.sin(rotation_angle)
+    rotation_matrix = np.array([[cosval, sinval, 0],
+                                [-sinval, cosval, 0],
+                                [0, 0, 1]])
+    rotated_data = np.dot(point_cloud.reshape((-1, 3)), rotation_matrix)
+    return rotated_data
+def jitter_point_cloud(point_cloud, sigma=0.01, clip=0.05):
+    """ Randomly jitter points. jittering is per point.
+        Input:
+          Nx3 array, point clouds
+        Return:
+          Nx3 array, jittered batch of point clouds
+    """
+    N, C = point_cloud.shape
+    assert(clip > 0)
+    jittered_data = np.clip(sigma * np.random.randn(N, C), -1*clip, clip)
+    jittered_data += point_cloud
+    return jittered_data
+# ====================================
+# Furthest point sampling algorithm
+# ====================================
+"""
+Furthest point sampling:
+這個function 會盡可能的分散選取特定數量的point cloud
+"""
+def calc_distances(p0, points):
+    return ((p0 - points)**2).sum(axis=1)
+def furthest_point_sampling(pts, K):
+    N,C=pts.shape
+    farthest_pts = np.zeros((K, C))
+    farthest_pts[0] = pts[np.random.randint(len(pts))]
+    distances = calc_distances(farthest_pts[0], pts)
+    for i in range(1, K):
+        farthest_pts[i] = pts[np.argmax(distances)]
+        distances = np.minimum(distances, calc_distances(farthest_pts[i], pts))
+    return farthest_pts
 # ==========================================================
 # ignore this one
 def perform_hello_test():
@@ -388,12 +489,12 @@ if __name__ == "__main__":
     fy = 616.819
     scalingfactor = 0.0010000000474974513
     camera=RGBDCamera(cx,cy,fx,fy,scalingfactor)
-    depth_file='./dataset/depth.png'
-    rgb_file='./dataset/color.png'
+    # depth_file='./dataset_for_cal_pos/depth/1.png'
+    # rgb_file='./dataset_for_cal_pos/color/1.png'
 
-    points=color_and_depth_to_ply(rgb_file,depth_file,camera)
-    savePoints_to_ply('.','banana_wo_partial.ply',points)
-    # show_ply_file('.','banana_wo_partial.ply')
+    # points=color_and_depth_to_ply(rgb_file,depth_file,camera)
+    # savePoints_to_ply('.','ra605_test.ply',points)
+    # show_ply_file('.','ra605_test.ply')
     # 如何使用down sample
     # function={
     #     'method':'uniform',
@@ -419,7 +520,7 @@ if __name__ == "__main__":
     color=color[...,::-1]
     depth=cv2.imread('./dataset/depth.png',cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
     mask=cv2.imread('./dataset/mask.png',cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
-    # print(color.shape)
+    print(color.shape)
     # print(depth.shape)
     # print(mask.shape)
     # color_img = Image.fromarray(color.astype('uint8'), 'RGB')
@@ -432,12 +533,39 @@ if __name__ == "__main__":
     color_img.size==depth_img.size==mask_img.size==(640,480)
     這邊的color藉由get_pixel可以得到裡面3個channel的值所以size那樣是正常的
     """
-    # points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
+    points,xyz_points=mask_to_partial_pointcloud(color,depth,mask,camera)
 
-    # savePoints_to_ply('.','banana.ply',points)
-    # show_ply_file('.','banana.ply')
-
+    savePoints_to_ply('.','banana.ply',points)
+    show_ply_file('.','banana.ply')
+    # ==============================================================
+    # 測試點雲整體被旋轉或者加噪音的狀況
+    # ==============================================================
+    K=2048
+    normalized_points=normalize_point_cloud(xyz_points.copy())
+    rotated_normalized_points=rotate_point_cloud_z(normalized_points.copy())
+    jittered_normalized_points=jitter_point_cloud(normalized_points.copy())
+    furthest_points=furthest_point_sampling(normalized_points.copy(), K)
+    print(normalized_points.shape)
+    print(furthest_points.shape)
+    vec_norm,_=cal_pca(normalized_points,is_show=True,title='norm')
+    vec_rot,_=cal_pca(rotated_normalized_points,is_show=True,title='rotate')
+    vec_jit,_=cal_pca(jittered_normalized_points,is_show=True,title='jitter')
+    vec_furth,_=cal_pca(furthest_points,is_show=True,title='furthest')
+    print("PCA of norm")
+    print(vec_norm)
+    print("PCA of rotation")
+    print(vec_rot)
+    print("PCA of jitter")
+    print(vec_jit)
+    print("PCA of furthest")
+    print(vec_furth)
+    # show_centriod(normalized_points,'normalized')
+    # show_centriod(rotated_normalized_points,'rotated')
+    # show_centriod(jittered_normalized_points,'jittered')
+    # show_centriod(furthest_points,'furthest')
+    # ==============================================================
     # 對partial point cloud做 remove outlier看效果(加上down sizing的效果)
+    # ==============================================================
     # pcd = o3d.io.read_point_cloud('banana.ply')
     # print(type(pcd).__module__)
     # print(type(np.asarray(pcd.points)).__module__)
@@ -509,5 +637,5 @@ if __name__ == "__main__":
 
     # ============================================================================
     # 測試module import 問題
-    perform_hello_test()
+    # perform_hello_test()
     # ============================================================================
