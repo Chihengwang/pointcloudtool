@@ -52,6 +52,11 @@ Basic function for point cloud
 >> * 測試join map without mask的情況下，圖會長得怎樣
 >> * 另外也實作了join map with mask的function用以提供restful api裡面的exploration algorithm使用
 >> * test_join_map_on_ra605.py file可以測試以上功能
+
+> 2019/12/29實現的新功能及測試：
+>> * 測試了PCA是否能夠成為grasping pose的candidate，以及如何決定pca的x,y,z如何決定在機器人末端點的姿態
+>> * 修改了cal_pca方法，修改使其在pca_z向下時，可以將其整個對pca_x軸旋轉180度，使掌心一樣可以朝內(空心情況)
+>> * 測試的IK角度可以在 `c://robotic_resource/手臂模擬/grasping_pose_ik.m` 裡面測試機器人的pose
 --------------------------------------------------
 
 ### TODOLIST:
@@ -61,7 +66,7 @@ Basic function for point cloud
 * test_pca 裡面的功能 整合進point_cloud_function.py裡面(V)
 * select down size的random產生方法實作(V)
 * 將join map function加上mask 去實作(V)
-* 整合進去restful api的程式碼裡面
+* 整合進去restful api的程式碼裡面(V)
 
 ---------------------------------------------------
 ### 文件說明:
@@ -70,4 +75,5 @@ Basic function for point cloud
 > 3. testfile folder是一些open3d裡面基本的操作 與 point cloud的操作<br>
 > 4. join_map.py 實作3d重建,align_depth.py是pyrealsense的基本範例<br>
 > 5. 主要就是import point_cloud_function.py就可以用裡面的所有function<br>
-> 6. 提供dataset_for_cal_pos folder的資料集以及pose_ra605的三種相對應的姿態提供測試
+> 6. 提供dataset_for_cal_pos folder的資料集以及pose_ra605的三種相對應的姿態提供測試<br>
+> 7. prepare_ply_file_test.py 文件 可以用來測試grasping pose generator的方法可行性

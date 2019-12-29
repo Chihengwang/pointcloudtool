@@ -3,3 +3,9 @@
 
 
 ra605
+/pointnet_data
+
+
+# .py
+test_normal_vector.py
+show_ply_file.py

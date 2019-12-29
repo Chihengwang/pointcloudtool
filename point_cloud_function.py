@@ -410,10 +410,34 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
         ax.scatter(xm, ym, zm, c='r',s=10)
+        print("*"*30)
+        print("z 向量 %f ,%f ,%f" % (pca.components_[2,0],pca.components_[2,1],pca.components_[2,2]))
+        if(np.inner(pca.components_[2,:],[0,0,1])>0):
+            print("pca_z向量與z方向同向，需要對x軸旋轉180度")
+            r = R.from_euler('x',180, degrees=True)
+            r_b_o=R.from_dcm(pca.components_.T)
+            r3=r_b_o*r
+            pca.components_=r3.as_dcm().T
+        # 求出x,y的外積,應該為z 看是否與第三軸同向確認是否為正確
+        x_axis_matrix=np.outer(pca.components_[1,:],pca.components_[2,:])
+        x_axis=np.asarray([x_axis_matrix[1,2]-x_axis_matrix[2,1],x_axis_matrix[2,0]-x_axis_matrix[0,2],x_axis_matrix[0,1]-x_axis_matrix[1,0]])
+        print("*"*30)
+        print("外積計算的x軸為:")
+        print(x_axis)
+
+        # 確認pca_x與經由外積(y,z)計算的x同向
+        if(np.allclose(pca.components_[0,:],x_axis)):
+            print("pca_x與外積(y,z)計算的x同向")
+        else:
+            # 反向，將不重要的x軸轉向
+            print("x方向不正確，需替換成正確的項")
+            pca.components_[0,:]=x_axis
         discount=1
+        print("*"*30)
         for length, vector in zip(pca.explained_variance_, pca.components_):
             ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
-            discount/=2
+            discount/=3
+
         plt.show()
     return pca.components_,pca.explained_variance_
 # ==========================================================
