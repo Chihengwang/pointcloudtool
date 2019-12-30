@@ -57,6 +57,10 @@ Basic function for point cloud
 >> * 測試了PCA是否能夠成為grasping pose的candidate，以及如何決定pca的x,y,z如何決定在機器人末端點的姿態
 >> * 修改了cal_pca方法，修改使其在pca_z向下時，可以將其整個對pca_x軸旋轉180度，使掌心一樣可以朝內(空心情況)
 >> * 測試的IK角度可以在 `c://robotic_resource/手臂模擬/grasping_pose_ik.m` 裡面測試機器人的pose
+
+> 2019/12/30 修改：
+>> * z方向相反時改x(-1) 取代尤拉角對x軸翻轉
+>> * x方向希望朝前(與base同向)，減少夾爪線路的纏繞，對掌心z軸旋轉180度(尤拉角)
 --------------------------------------------------
 
 ### TODOLIST:

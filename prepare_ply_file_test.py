@@ -7,8 +7,8 @@ dirname='./pointnet_data'
 # 貧果：14-12-2019-14-56-32.ply
 # tape: 06-12-2019-15-29-40.ply
 # 杯子：14-12-2019-14-33-52.ply
-filename='06-12-2019-15-29-40.ply'
-show_ply_file(dirname,filename)
+filename='14-12-2019-14-28-51.ply'
+# show_ply_file(dirname,filename)
 pcs=o3d.io.read_point_cloud(dirname+"/"+filename)
 print("original------------------------")
 print(np.asarray(pcs.points).shape)
@@ -27,7 +27,7 @@ down_pcd=point_cloud_down_sample_from_pc(pcs,function)
 print(np.asarray(down_pcd.points).shape)
 down_pcd_vec,_=cal_pca(np.asarray(down_pcd.points),is_show=False,title="downpcd")
 print(down_pcd_vec)
-# o3d.visualization.draw_geometries([down_pcd])
+o3d.visualization.draw_geometries([down_pcd])
 
 function={
     'method':'statistical',
@@ -37,7 +37,7 @@ function={
 print("removed_pcd----------------------------------------")
 remove_pcd=point_cloud_outlier_removal(down_pcd,is_show=False,function=function)
 print(np.asarray(remove_pcd.points).shape)
-o3d.visualization.draw_geometries([remove_pcd])
+# o3d.visualization.draw_geometries([remove_pcd])
 # show_centriod(np.asarray(remove_pcd.points),"sampling")
 vec_removed,_=cal_pca(np.asarray(remove_pcd.points),is_show=False,title="sampling")
 print(vec_removed)
@@ -45,12 +45,15 @@ print("fps-----------------------------------------")
 point_number=1024
 fps_pcs=furthest_point_sampling(np.asarray(remove_pcd.points),point_number)
 print(fps_pcs.shape)
-show_centriod(fps_pcs,"fps")
+# show_centriod(fps_pcs,"fps")
 # 需要將單位從m換到mm
 centroid=np.asarray(get_centroid_from_pc(fps_pcs))*1000
 normed_pcs=normalize_point_cloud(fps_pcs)
-show_centriod(normed_pcs,"norm")
-normed_vec,_=cal_pca(normed_pcs,is_show=True,title="Norm")
+# show_centriod(normed_pcs,"norm")
+normed_vec,covarience=cal_pca(normed_pcs,is_show=True,title="Norm")
+print("*"*30)
+print("PCA的長度為:")
+print(covarience)
 print("*"*30)
 print("PCA的向量為:")
 print(normed_vec)
