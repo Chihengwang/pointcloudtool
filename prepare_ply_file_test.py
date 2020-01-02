@@ -7,8 +7,8 @@ dirname='./pointnet_data'
 # 貧果：14-12-2019-14-56-32.ply
 # tape: 06-12-2019-15-29-40.ply
 # 杯子：14-12-2019-14-33-52.ply
-filename='14-12-2019-14-28-51.ply'
-# show_ply_file(dirname,filename)
+filename='02-01-2020-12-41-27.ply'
+show_ply_file(dirname,filename)
 pcs=o3d.io.read_point_cloud(dirname+"/"+filename)
 print("original------------------------")
 print(np.asarray(pcs.points).shape)
@@ -77,3 +77,19 @@ t_matrix_ik=forward_kinematic(inverse_kinematic(t_matrix))
 print("*"*30)
 print("tf矩陣是否相同：")
 print(np.allclose(t_matrix,t_matrix_ik))
+# ==================================
+# 法蘭面+夾爪厚度+離物體的距離
+D=5+35.1+100
+D_list=np.asarray([0,0,D])
+print(D_list)
+# off_set=centroid-rotation_matrix.dot(D_list)
+print(D_list.shape)
+offset_matrix=np.zeros((4,4))
+offset_matrix[0:3,0:3]=np.eye(3)
+offset_matrix[0:3,3]=D_list.T
+offset_matrix[3,:]=np.array([0,0,0,1])
+ready_tf=t_matrix.dot(np.linalg.inv(offset_matrix))
+print("-"*30)
+print("Ready IK")
+print(ready_tf)
+print(inverse_kinematic(ready_tf))
