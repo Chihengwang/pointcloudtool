@@ -4,8 +4,8 @@
 
 ra605
 /pointnet_data
-
-
+/data
+/partial_pc_testdata
 # .py
 test_normal_vector.py
 show_ply_file.py

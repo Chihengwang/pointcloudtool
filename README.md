@@ -61,6 +61,11 @@ Basic function for point cloud
 > 2019/12/30 修改：
 >> * z方向相反時改x(-1) 取代尤拉角對x軸翻轉
 >> * x方向希望朝前(與base同向)，減少夾爪線路的纏繞，對掌心z軸旋轉180度(尤拉角)
+
+> 2020/1/8 修改：
+>> * 改了由拉角的相乘bug, 改用numpy的矩陣乘法做處理，不用scipy的方式進行相乘
+>> * 修正show_centroid ,cal_pca的坐標軸固定問題
+>> * 編寫了藉由PCA 的pose generator 文件(實現簡單的功能) 可調整PCA的主軸方向
 --------------------------------------------------
 
 ### TODOLIST:
@@ -80,4 +85,5 @@ Basic function for point cloud
 > 4. join_map.py 實作3d重建,align_depth.py是pyrealsense的基本範例<br>
 > 5. 主要就是import point_cloud_function.py就可以用裡面的所有function<br>
 > 6. 提供dataset_for_cal_pos folder的資料集以及pose_ra605的三種相對應的姿態提供測試<br>
-> 7. prepare_ply_file_test.py 文件 可以用來測試grasping pose generator的方法可行性
+> 7. prepare_ply_file_test.py 文件 可以用來測試grasping pose generator的方法可行性<br>
+> 8. provider 是pointnet裡面的處理資料庫 pose_data_generator可以用來準備q-pointnet的數據集

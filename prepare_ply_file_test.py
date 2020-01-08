@@ -2,12 +2,12 @@ from point_cloud_function import *
 from ra605.arm_kinematic import inverse_kinematic,forward_kinematic
 
 dirname='./pointnet_data'
-# 香蕉：06-12-2019-15-14-55.ply
+# 香蕉：06-12-2019-15-14-55.ply,02-01-2020-14-18-41
 # 盒子：14-12-2019-14-28-51.ply
-# 貧果：14-12-2019-14-56-32.ply
-# tape: 06-12-2019-15-29-40.ply
-# 杯子：14-12-2019-14-33-52.ply
-filename='02-01-2020-12-41-27.ply'
+# 貧果：14-12-2019-14-56-32.ply,02-01-2020-14-38-31
+# tape: 06-12-2019-15-29-40.ply,02-01-2020-14-29-18,02-01-2020-14-23-58
+# 杯子：14-12-2019-14-33-52.ply,02-01-2020-14-55-34
+filename='14-12-2019-14-56-32.ply'
 show_ply_file(dirname,filename)
 pcs=o3d.io.read_point_cloud(dirname+"/"+filename)
 print("original------------------------")

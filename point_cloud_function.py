@@ -253,6 +253,9 @@ def show_centriod(xyz_points,title_name):
     ax.set_zlabel('Z')  # 坐标轴
     ax.set_ylabel('Y')
     ax.set_xlabel('X')
+    ax.set_xlim3d(-1, 1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-1,1)
     plt.title(title_name)
     plt.show()
 """
@@ -406,6 +409,9 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
         ax.set_xlabel('X Label(unit:m)')
         ax.set_ylabel('Y Label(unit:m)')
         ax.set_zlabel('Z Label(unit:m)')
+        ax.set_xlim3d(-1, 1)
+        ax.set_ylim3d(-1,1)
+        ax.set_zlim3d(-1,1)
         plt.title(title)
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
@@ -435,11 +441,11 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
             pca.components_[0,:]=x_axis
         if(np.inner(pca.components_[0,:],[1,0,0])<0):
             # 希望夾爪朝前，這樣末端點就不需要轉太多
-            print("pca_x向量與x方向反向，需要對x軸旋轉180度")
+            print("pca_x向量與x方向反向，需要對z軸旋轉180度")
             r = R.from_euler('z',180, degrees=True)
-            r_b_o=R.from_dcm(pca.components_.T)
-            r3=r_b_o*r
-            pca.components_=r3.as_dcm().T   
+            # r_b_o=R.from_dcm(pca.components_.T)
+            r3=np.dot(pca.components_.transpose(),r.as_dcm().astype(int))
+            pca.components_=r3.transpose()   
         discount=1
         print("*"*30)
         for length, vector in zip(pca.explained_variance_, pca.components_):
