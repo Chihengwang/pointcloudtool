@@ -76,6 +76,7 @@ Basic function for point cloud
 >> * 完善h5 file export的功能
 >> * 完善防呆機制，修改一些細微排版
 >> * 新增旋轉PCA的功能(測試完畢)每次修改結束必須點選save pca的btn
+>> * 接著多測試看看功能看會不會有bug
 --------------------------------------------------
 
 ### TODOLIST:
