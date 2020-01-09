@@ -75,6 +75,7 @@ Basic function for point cloud
 > 2020/1/9 新增v2：
 >> * 完善h5 file export的功能
 >> * 完善防呆機制，修改一些細微排版
+>> * 新增旋轉PCA的功能(測試完畢)每次修改結束必須點選save pca的btn
 --------------------------------------------------
 
 ### TODOLIST:
