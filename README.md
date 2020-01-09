@@ -71,6 +71,10 @@ Basic function for point cloud
 >> * 修改了point_cloud_function.py裡面的cal_pca function的show bug
 >> * 新增了pose generator gui的程式碼
 >> load modelnet40進去app裡面，還有完成partial point cloud 顯示與選擇mode，完成基本介面
+
+> 2020/1/9 新增v2：
+>> * 完善h5 file export的功能
+>> * 完善防呆機制，修改一些細微排版
 --------------------------------------------------
 
 ### TODOLIST:
