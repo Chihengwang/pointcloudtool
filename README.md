@@ -66,6 +66,11 @@ Basic function for point cloud
 >> * 改了由拉角的相乘bug, 改用numpy的矩陣乘法做處理，不用scipy的方式進行相乘
 >> * 修正show_centroid ,cal_pca的坐標軸固定問題
 >> * 編寫了藉由PCA 的pose generator 文件(實現簡單的功能) 可調整PCA的主軸方向
+
+> 2020/1/9 新增與修改：
+>> * 修改了point_cloud_function.py裡面的cal_pca function的show bug
+>> * 新增了pose generator gui的程式碼
+>> load modelnet40進去app裡面，還有完成partial point cloud 顯示與選擇mode，完成基本介面
 --------------------------------------------------
 
 ### TODOLIST:
