@@ -120,7 +120,11 @@ def load_h5(h5_filename):
     data = f['data'][:]
     label = f['label'][:]
     return (data, label)
-
+def load_h5_wo_label(h5_filename):
+    f = h5py.File(h5_filename)
+    data = f['data'][:]
+    # label = f['label'][:]
+    return data
 def loadDataFile(filename):
     return load_h5(filename)
 

@@ -32,7 +32,7 @@ class App:
 		self.current_point_cloud=np.asarray([])
 		self.current_partial_point_cloud=np.asarray([])
 		self.covarience=np.asarray([])
-		self.length_of_point_cloud_set=0
+
 		# point 數量
 		self.NUMBER_OF_POINTS = 1024
 		# 切割面的閥值
@@ -57,17 +57,19 @@ class App:
 		self.frame1.grid(row=0,column=0, padx=8, pady=4,sticky=N)
 		# ====================================================
 		# Frame1_1
-		self.frame1_1 = ttk.LabelFrame(self.frame1, text='Load ModelNet40')
+		self.frame1_1 = ttk.LabelFrame(self.frame1, text='Load Models')
 		self.frame1_1.pack(anchor='center')
-		self.path_label = ttk.Label(self.frame1_1, text="Choose the train_files.txt in Modelnet:")
-		self.path_label.pack()
+		self.path_label = ttk.Label(self.frame1_1, text="Choose the path of models:")
+		self.path_label.grid(row=0,column=0)
 		# Button that lets the user take a loadModelNet40
-		self.btn_loadModelNet40=ttk.Button(self.frame1_1, text="loadModelNet40", command=self.loadModelNet40)
-		self.btn_loadModelNet40.pack()
+		self.btn_loadModelNet40=ttk.Button(self.frame1_1, text="loadModelNet40(Load train_files.txt)", command=self.loadModelNet40)
+		self.btn_loadModelNet40.grid(row=1,column=0)
+		self.btn_loadMyOwnData=ttk.Button(self.frame1_1, text="loadMyOwnData(h5 file)", command=self.loadMyOwnData)
+		self.btn_loadMyOwnData.grid(row=2,column=0)
 		self.path_labelText=StringVar()
 		self.path_labelText.set('----------')
 		self.show_path=Label(self.frame1_1,textvariable=self.path_labelText)
-		self.show_path.pack()
+		self.show_path.grid(row=3,column=0)
 
 		# ============ Mode packing =======================
 		self.mode_packing_frame = ttk.LabelFrame(self.frame1, text=' Mode packing frame')
@@ -100,7 +102,10 @@ class App:
 		self.Confirm_btn = Button(self.frame1_6, text='Confirm mode', width=15,
 					height=1, command = self.confirm_mode)
 		self.Confirm_btn.pack(padx=15, pady=10, side=LEFT)
-
+			# ------- Confirm mode for own data Button -------
+		self.Confirm_btn_own_data = Button(self.frame1_6, text='Confirm own data', width=15,
+					height=1, command = self.confirm_for_own_data)
+		self.Confirm_btn_own_data.pack(padx=15, pady=10, side=LEFT)
 		# =========== path selection =============
 		self.frame1_3 = ttk.LabelFrame(self.frame1, text='Saving Path ')
 		self.frame1_3.pack(anchor='center')
@@ -160,7 +165,7 @@ class App:
 		self.frame1_7 = ttk.LabelFrame(self.frame1_4, text=' Finger selection mode ')
 		self.frame1_7.pack(anchor='center')
 		self.Finger_selection_Value=IntVar()
-		self.Finger_selection_Value.set(1)
+		self.Finger_selection_Value.set(0)
 		Radiobutton(self.frame1_7,text='Two finger mode',value=0,variable=self.Finger_selection_Value).pack(side=LEFT)
 		Radiobutton(self.frame1_7,text='Three finger mode',value=1,variable=self.Finger_selection_Value).pack(side=RIGHT)
 			
@@ -349,7 +354,24 @@ class App:
 		self.replot(self.current_partial_point_cloud,self.current_pca_axis,self.covarience,"Partial point cloud")
 		self.pca_axis_after_rotating=np.copy(self.current_pca_axis)
 
-
+	def confirm_for_own_data(self):
+		# 資料前處理
+		self.current_partial_point_cloud=np.copy(self.current_point_cloud)
+		self.current_partial_point_cloud=normalize_point_cloud(self.current_partial_point_cloud)
+		# self.num_var.set(str(self.current_partial_point_cloud.shape[0]))
+		if(self.current_partial_point_cloud.shape[0]>self.NUMBER_OF_POINTS):
+			self.num_var.set('Okay')
+		else:
+			self.num_var.set('Need to recatch')
+		self.current_partial_point_cloud=furthest_point_sampling(self.current_partial_point_cloud,self.NUMBER_OF_POINTS)
+		self.current_pca_axis,self.covarience=cal_pca_for_pose_data_generator(self.current_partial_point_cloud)
+		if( self.covarience[0] - self.covarience[1] < self.SYMMETRIC_THRESHOLD):
+			self.symmetric_var.set('Fit Three Fingers')
+		else:
+			self.symmetric_var.set('Fit Two Fingers')
+			
+		self.replot(self.current_partial_point_cloud,self.current_pca_axis,self.covarience,"Partial point cloud")
+		self.pca_axis_after_rotating=np.copy(self.current_pca_axis)	
 	# Save button command
 	def Save(self):
 		# 防呆措施
@@ -422,6 +444,19 @@ class App:
 		self.POINT_CLOUD_SET_LIST=point_cloud_collection
 		# Load model 進來後停止使用此button
 		self.btn_loadModelNet40.configure(state='disabled')
+		self.btn_loadMyOwnData.configure(state='normal')
+		self.Confirm_btn.configure(state='normal')
+		self.Confirm_btn_own_data.configure(state='disabled')
+	def loadMyOwnData(self):
+		# 這個方法用來load自己準備好的partial point cloud dataset
+		file_path_name=askopenfilenames()
+		self.path_labelText.set(file_path_name[0])
+		point_cloud_collection=provider.load_h5_wo_label(file_path_name[0])
+		self.POINT_CLOUD_SET_LIST=point_cloud_collection
+		self.btn_loadModelNet40.configure(state='normal')
+		self.btn_loadMyOwnData.configure(state='disabled')
+		self.Confirm_btn.configure(state='disabled')
+		self.Confirm_btn_own_data.configure(state='normal')
 
 	def rotate_point_cloud_through_x_negative90(self,point_cloud):
 		""" Randomly rotate the point clouds to augument the dataset
@@ -463,6 +498,8 @@ class App:
 		rotated_data = np.dot(pointcloud.reshape((-1, 3)), R)
 		return rotated_data
 	def replot(self,pointcloud,pca_axis,covarience,title):
+		# put axis name of the pca on plot
+		axis_name=['pca_x','pca_y','pca_z']
 		# 清除圖片
 		self.ax.cla()
 		self.ax.set_zlabel('Z')  # 坐标轴
@@ -477,8 +514,10 @@ class App:
 		xm,ym,zm=get_centroid_from_pc(pointcloud)
 		self.ax.scatter(xm, ym, zm, c='r',s=10)
 		discount = 1
-		for length, vector in zip(covarience,pca_axis):
+		for length, vector,axis in zip(covarience,pca_axis,axis_name):
+			# print(axis)
 			self.ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
+			self.ax.text((xm+vector[0])*discount,(ym+vector[1])*discount,(zm+vector[2])*discount , str(axis), color='red')
 			discount/=3
 		self.canvas.draw()
 		self.toolbar.update()
@@ -501,5 +540,5 @@ class App:
 if __name__ == "__main__":
 # Create a window and pass it to the Application object
 # intialize the window in the first parameter.
-	App=App(Tk(), "Python 照片處理系統")
+	App=App(Tk(), "夾爪姿態產生器")
 	App.window.mainloop()

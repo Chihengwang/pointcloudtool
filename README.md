@@ -77,6 +77,11 @@ Basic function for point cloud
 >> * 完善防呆機制，修改一些細微排版
 >> * 新增旋轉PCA的功能(測試完畢)每次修改結束必須點選save pca的btn
 >> * 接著多測試看看功能看會不會有bug
+
+> 2020/1/13 新增v3：
+>> * 更新pca axis的text上去圖片
+>> * 新增一個新的btn可以把upload 自己的h5 file(own partial point cloud dataset)
+>> * confirm own data的btn是用來計算own dataset的PCA 不需要額外做切割點雲的動作
 --------------------------------------------------
 
 ### TODOLIST:
