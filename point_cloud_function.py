@@ -253,9 +253,9 @@ def show_centriod(xyz_points,title_name):
     ax.set_zlabel('Z')  # 坐标轴
     ax.set_ylabel('Y')
     ax.set_xlabel('X')
-    ax.set_xlim3d(-1, 1)
-    ax.set_ylim3d(-1,1)
-    ax.set_zlim3d(-1,1)
+    # ax.set_xlim3d(-1, 1)
+    # ax.set_ylim3d(-1,1)
+    # ax.set_zlim3d(-1,1)
     plt.title(title_name)
     plt.show()
 """
@@ -439,8 +439,36 @@ def cal_pca_for_pose_data_generator(point_cloud,desired_num_of_feature=3):
 def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo"):
     pca = PCA(n_components=desired_num_of_feature)
     pca.fit(point_cloud)
-    # print("Principal vectors: ",pca.components_)
-    # print("Singular values: ",pca.explained_variance_)
+    print("*"*30)
+    print("z 向量 %f ,%f ,%f" % (pca.components_[2,0],pca.components_[2,1],pca.components_[2,2]))
+    if(np.inner(pca.components_[2,:],[0,0,1])>0):
+        print("pca_z向量與z方向同向，需要對x軸旋轉180度")
+        pca.components_[2,:]=-pca.components_[2,:]
+        # r = R.from_euler('x',180, degrees=True)
+        # r_b_o=R.from_dcm(pca.components_.T)
+        # r3=r_b_o*r
+        # pca.components_=r3.as_dcm().T
+    # 求出x,y的外積,應該為z 看是否與第三軸同向確認是否為正確
+    x_axis_matrix=np.outer(pca.components_[1,:],pca.components_[2,:])
+    x_axis=np.asarray([x_axis_matrix[1,2]-x_axis_matrix[2,1],x_axis_matrix[2,0]-x_axis_matrix[0,2],x_axis_matrix[0,1]-x_axis_matrix[1,0]])
+    print("*"*30)
+    print("外積計算的x軸為:")
+    print(x_axis)
+
+    # 確認pca_x與經由外積(y,z)計算的x同向
+    if(np.allclose(pca.components_[0,:],x_axis)):
+        print("pca_x與外積(y,z)計算的x同向")
+    else:
+        # 反向，將不重要的x軸轉向
+        print("x方向不正確，需替換成正確的項")
+        pca.components_[0,:]=x_axis
+    if(np.inner(pca.components_[0,:],[1,0,0])<0):
+        # 希望夾爪朝前，這樣末端點就不需要轉太多
+        print("pca_x向量與x方向反向，需要對z軸旋轉180度")
+        r = R.from_euler('z',180, degrees=True)
+        # r_b_o=R.from_dcm(pca.components_.T)
+        r3=np.dot(pca.components_.transpose(),r.as_dcm().astype(int))
+        pca.components_=r3.transpose()
     if is_show:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -453,37 +481,7 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
         plt.title(title)
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
-        ax.scatter(xm, ym, zm, c='r',s=10)
-        print("*"*30)
-        print("z 向量 %f ,%f ,%f" % (pca.components_[2,0],pca.components_[2,1],pca.components_[2,2]))
-        if(np.inner(pca.components_[2,:],[0,0,1])>0):
-            print("pca_z向量與z方向同向，需要對x軸旋轉180度")
-            pca.components_[2,:]=-pca.components_[2,:]
-            # r = R.from_euler('x',180, degrees=True)
-            # r_b_o=R.from_dcm(pca.components_.T)
-            # r3=r_b_o*r
-            # pca.components_=r3.as_dcm().T
-        # 求出x,y的外積,應該為z 看是否與第三軸同向確認是否為正確
-        x_axis_matrix=np.outer(pca.components_[1,:],pca.components_[2,:])
-        x_axis=np.asarray([x_axis_matrix[1,2]-x_axis_matrix[2,1],x_axis_matrix[2,0]-x_axis_matrix[0,2],x_axis_matrix[0,1]-x_axis_matrix[1,0]])
-        print("*"*30)
-        print("外積計算的x軸為:")
-        print(x_axis)
-
-        # 確認pca_x與經由外積(y,z)計算的x同向
-        if(np.allclose(pca.components_[0,:],x_axis)):
-            print("pca_x與外積(y,z)計算的x同向")
-        else:
-            # 反向，將不重要的x軸轉向
-            print("x方向不正確，需替換成正確的項")
-            pca.components_[0,:]=x_axis
-        if(np.inner(pca.components_[0,:],[1,0,0])<0):
-            # 希望夾爪朝前，這樣末端點就不需要轉太多
-            print("pca_x向量與x方向反向，需要對z軸旋轉180度")
-            r = R.from_euler('z',180, degrees=True)
-            # r_b_o=R.from_dcm(pca.components_.T)
-            r3=np.dot(pca.components_.transpose(),r.as_dcm().astype(int))
-            pca.components_=r3.transpose()   
+        ax.scatter(xm, ym, zm, c='r',s=10)   
         discount=1
         print("*"*30)
         for length, vector in zip(pca.explained_variance_, pca.components_):
@@ -547,6 +545,65 @@ def furthest_point_sampling(pts, K):
         farthest_pts[i] = pts[np.argmax(distances)]
         distances = np.minimum(distances, calc_distances(farthest_pts[i], pts))
     return farthest_pts
+
+# ==========================================================
+# Open width of finger to finger
+def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_threshold=0.97):
+    """
+    input point cloud should be the original data but already do the point cloud preprocessing
+    (without normalization)
+    input:
+        point cloud: 1024X3
+        pca_axis: [-pca_x-]
+                [-pca_y-]
+                [-pca_z-]
+        or
+        rotation matrix from Q-pointNet(but need to be transposed)
+        type: np array
+    return:
+        length of gripper would open 
+        (unit:mm)
+        because unit of the point cloud is meter, we need to change it into mm.
+    """
+    # translate the point cloud but not divide the furthest length
+    centroid = np.mean(point_cloud, axis=0)
+    point_cloud -= centroid
+
+    # pca_axis 是PCA坐標系到世界坐標系的旋轉矩陣
+    new_point_cloud= np.dot(pca_axis,point_cloud.T)
+
+    # show_centriod(new_point_cloud.T,"PCA coordinate")
+
+    new_point_cloud=new_point_cloud.T*1000
+    # mapping onto plane
+    xm,ym,zm=get_centroid_from_pc(new_point_cloud)
+
+    # normalize the point(change into normalized vector)
+    length_of_norm=np.linalg.norm(np.copy(new_point_cloud[:,:2]),axis=1,keepdims=True)
+    normalized_vector_pc=np.true_divide(np.copy(new_point_cloud[:,:2]),length_of_norm)
+
+    pca_y_axis_after_transform=np.asarray([0,1]).reshape(2,1)
+    # 內積計算 取最接近1,-1
+    inner_product_result=np.dot(normalized_vector_pc,pca_y_axis_after_transform)
+    filter_point_condition=np.where(np.abs(inner_product_result)>=inner_product_threshold)[0]
+    filter_point=new_point_cloud[filter_point_condition,:].copy()
+
+    # 只要考慮pca-y軸
+    index_max=np.argmax(filter_point,axis=0)[1]
+    index_min=np.argmin(filter_point,axis=0)[1]
+    distance_vector=filter_point[index_max,:2]-filter_point[index_min,:2]
+    distance=np.linalg.norm(distance_vector)
+    if(isVisualize):
+        plt.scatter(filter_point[:,0], filter_point[:,1], c='g',s=50)#繪製散佈圖
+        plt.scatter(new_point_cloud[:,0], new_point_cloud[:,1],c='b',s=8)#繪製散佈圖
+        plt.scatter(xm, ym, c='r',s=30)
+        plt.scatter(filter_point[index_max,0], filter_point[index_max,1], c='r',s=30)
+        plt.scatter(filter_point[index_min,0], filter_point[index_min,1], c='r',s=30)
+        plt.title("finger width should be:"+str(round(distance,2))+"mm")
+        plt.show()
+
+    return distance
+
 # ==========================================================
 # ignore this one
 def perform_hello_test():

@@ -324,8 +324,8 @@ class App:
 		# cal_pca(self.current_point_cloud,False,title="original point cloud")
 		# normalized the random normal vector(x,y,z) 
 		# 盡量讓normal vector可以是我眼睛看出去的方向，所以才規定這些參數
-		rand_normal_vec_X=np.random.uniform(0, 1, 1)
-		rand_normal_vec_Z=np.random.uniform(-1, -0.3, 1)
+		rand_normal_vec_X=np.random.uniform(-1, 1, 1)
+		rand_normal_vec_Z=np.random.uniform(-1, -0.6, 1)
 		rand_normal_vec_Y=np.random.uniform(-1, 1, 1)
 		rand_normal_vec=np.hstack((rand_normal_vec_X,rand_normal_vec_Y,rand_normal_vec_Z))
 		normalized_vec=rand_normal_vec/np.linalg.norm(rand_normal_vec)
@@ -337,8 +337,10 @@ class App:
 		self.num_var.set(str(self.current_partial_point_cloud.shape[0]))
 		if(self.current_partial_point_cloud.shape[0]>self.NUMBER_OF_POINTS):
 			self.num_var.set('Okay')
+			# self.num_var.set(str(self.current_partial_point_cloud.shape[0]))
 		else:
 			self.num_var.set('Need to recatch')
+			# self.num_var.set(str(self.current_partial_point_cloud.shape[0]))
 		# 資料前處理
 		self.current_partial_point_cloud=normalize_point_cloud(self.current_partial_point_cloud)
 		self.current_partial_point_cloud=furthest_point_sampling(self.current_partial_point_cloud,self.NUMBER_OF_POINTS)
@@ -357,13 +359,13 @@ class App:
 	def confirm_for_own_data(self):
 		# 資料前處理
 		self.current_partial_point_cloud=np.copy(self.current_point_cloud)
-		self.current_partial_point_cloud=normalize_point_cloud(self.current_partial_point_cloud)
 		# self.num_var.set(str(self.current_partial_point_cloud.shape[0]))
 		if(self.current_partial_point_cloud.shape[0]>self.NUMBER_OF_POINTS):
 			self.num_var.set('Okay')
 		else:
 			self.num_var.set('Need to recatch')
 		self.current_partial_point_cloud=furthest_point_sampling(self.current_partial_point_cloud,self.NUMBER_OF_POINTS)
+		self.current_partial_point_cloud=normalize_point_cloud(self.current_partial_point_cloud)
 		self.current_pca_axis,self.covarience=cal_pca_for_pose_data_generator(self.current_partial_point_cloud)
 		if( self.covarience[0] - self.covarience[1] < self.SYMMETRIC_THRESHOLD):
 			self.symmetric_var.set('Fit Three Fingers')
@@ -376,6 +378,12 @@ class App:
 	def Save(self):
 		# 防呆措施
 		if(self.current_partial_point_cloud.size != 0):
+			if(self.x_rot_bar_value.get() !=0 or self.y_rot_bar_value.get() !=0 or self.z_rot_bar_value.get() !=0):
+				tkinter.messagebox.showwarning("Warning","請儲存目前PCA調整的狀態")
+				return
+			if(self.num_var.get()=='Need to recatch'):
+				tkinter.messagebox.showwarning("Warning","點雲數量不對，請重新載入")
+				return
 			self.SAVE_PARTIAL_PCS_LIST.append(self.current_partial_point_cloud.tolist())
 			self.MODE_LIST.append(int(self.Finger_selection_Value.get()))
 			rotation_matrix=self.current_pca_axis.T
@@ -400,7 +408,7 @@ class App:
 		self.start_catching()
 	# Export button command
 	def Export(self):
-		if(not self.var_Path.get() or not self.h5_file_name_var.get()):
+		if(not self.var_Path.get() or not self.h5_file_name_var.get() ):
 			tkinter.messagebox.showwarning("Warning","請輸入h5 file儲存路徑")
 			return
 		if(not self.SAVE_PARTIAL_PCS_LIST):
@@ -408,14 +416,14 @@ class App:
 			return
 		h5_dir=self.var_Path.get()
 		h5_name=self.h5_file_name_var.get()
-		h5_file_path=h5_dir+"/"+h5_name
+		h5_file_path=h5_dir+"/"+h5_name+'.h5'
 
 		self.save_h5_data_label_pose(h5_file_path,self.SAVE_PARTIAL_PCS_LIST,self.MODE_LIST,self.QUATERNION_LABEL_LIST)
 		self.SAVE_PARTIAL_PCS_LIST=[]
 		self.MODE_LIST=[]
 		self.QUATERNION_LABEL_LIST=[]
 		self.pc_set_number_var.set('--------')
-	
+		tkinter.messagebox.showinfo("成功儲存成h5 file", "file 路徑為："+ h5_file_path)
 	# --------------------
 
 	def onOpenClick(self):

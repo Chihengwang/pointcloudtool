@@ -82,6 +82,13 @@ Basic function for point cloud
 >> * 更新pca axis的text上去圖片
 >> * 新增一個新的btn可以把upload 自己的h5 file(own partial point cloud dataset)
 >> * confirm own data的btn是用來計算own dataset的PCA 不需要額外做切割點雲的動作
+
+
+> 2020/1/29 open width algorithm & amendment of cal_pca visualization problem：
+>> * 新增了如何計算抓取寬度的方法，可調整inner product threshold去調整 filter出來的點雲
+>> * 修正本來isshow=false時會出現無法計算pca_axis的bug.
+>> * 修改pose generator gui裡面 confirm own data點雲處理順序錯誤的問題，以及處理操作上的防呆
+>> 另外h5 file名稱的填寫無須加入.h5的文件名稱
 --------------------------------------------------
 
 ### TODOLIST:
@@ -102,4 +109,5 @@ Basic function for point cloud
 > 5. 主要就是import point_cloud_function.py就可以用裡面的所有function<br>
 > 6. 提供dataset_for_cal_pos folder的資料集以及pose_ra605的三種相對應的姿態提供測試<br>
 > 7. prepare_ply_file_test.py 文件 可以用來測試grasping pose generator的方法可行性<br>
-> 8. provider 是pointnet裡面的處理資料庫 pose_data_generator可以用來準備q-pointnet的數據集
+> 8. provider 是pointnet裡面的處理資料庫 pose_data_generator可以用來準備q-pointnet的數據集<br>
+> 9. test_open_width 是用來測試open width algorithm使用
