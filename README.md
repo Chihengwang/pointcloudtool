@@ -89,6 +89,10 @@ Basic function for point cloud
 >> * 修正本來isshow=false時會出現無法計算pca_axis的bug.
 >> * 修改pose generator gui裡面 confirm own data點雲處理順序錯誤的問題，以及處理操作上的防呆
 >> 另外h5 file名稱的填寫無須加入.h5的文件名稱
+
+> 2020/2/9 GUI 更新：
+>> * 新增對x軸rotate的方法(為了增加資料多樣性)-->change pitch
+>> * 更改了路徑顯示的text
 --------------------------------------------------
 
 ### TODOLIST:

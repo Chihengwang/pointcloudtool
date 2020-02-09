@@ -603,6 +603,29 @@ def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_th
         plt.show()
 
     return distance
+# ==========================================================
+# visualize the result of partial point cloud and pca
+def visualize_q_pointnet(pointcloud,pca_axis,title):
+    axis_name=['pca_x','pca_y','pca_z']
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X Label(unit:m)')
+    ax.set_ylabel('Y Label(unit:m)')
+    ax.set_zlabel('Z Label(unit:m)')
+    plt.title(title)
+    ax.set_xlim3d(-1, 1)
+    ax.set_ylim3d(-1,1)
+    ax.set_zlim3d(-1,1)
+    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
+    xm,ym,zm=get_centroid_from_pc(pointcloud)
+    ax.scatter(xm, ym, zm, c='r',s=10)
+    discount=1
+    for vector,axis in zip(pca_axis,axis_name):
+        print(vector)
+        ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
+        ax.text((xm+vector[0])*discount,(ym+vector[1])*discount,(zm+vector[2])*discount , str(axis), color='red')
+        discount/=3
+    plt.show()
 
 # ==========================================================
 # ignore this one

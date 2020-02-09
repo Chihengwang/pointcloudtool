@@ -24,7 +24,7 @@ class App:
 		self.SAVE_PARTIAL_PCS_LIST=[]
 		self.MODE_LIST=[]
 		self.QUATERNION_LABEL_LIST=[]
-
+		self.rotate_angle=0
 		# Setting parameter
 		self.POINT_CLOUD_SET_LIST=np.asarray([])   #之後會用這個來抽point cloud model
 		self.current_pca_axis=np.asarray([])
@@ -75,6 +75,23 @@ class App:
 		self.mode_packing_frame = ttk.LabelFrame(self.frame1, text=' Mode packing frame')
 		self.mode_packing_frame.pack(anchor='center')
 
+		# ============ Rotate with angle mode ===============
+		self.rotate_with_angle_frame = ttk.LabelFrame(self.mode_packing_frame, text=' RotateX with angle mode ')
+		self.rotate_with_angle_frame.pack(side=LEFT)
+		self.Rotate_with_angle_mode_Value=IntVar()
+		self.Rotate_with_angle_mode_Value.set(1)
+		Radiobutton(self.rotate_with_angle_frame,text='On',value=1,variable=self.Rotate_with_angle_mode_Value).pack(side=LEFT)
+		Radiobutton(self.rotate_with_angle_frame,text='Off',value=2,variable=self.Rotate_with_angle_mode_Value).pack(side=RIGHT)
+					# ------- d -------
+		self.rotateAngle_bar_value = IntVar()
+		self.rotateAngle_bar_value.set(0)  # default value = 0
+		slider_x = Scale(self.mode_packing_frame,
+							from_=360, to=0,
+							label='d', variable=self.rotateAngle_bar_value, command=self.on_change_rotate_angle
+							)
+		slider_x.pack(padx=5, pady=10, side=LEFT)
+
+
 		# ============ Rotating_perturbation ===============
 		self.frame1_1 = ttk.LabelFrame(self.mode_packing_frame, text=' Rotating perturbation mode ')
 		self.frame1_1.pack(side=LEFT)
@@ -91,6 +108,7 @@ class App:
 		self.Restore_mode_Value.set(1)
 		Radiobutton(self.frame1_2,text='On',value=1,variable=self.Restore_mode_Value).pack(side=LEFT)
 		Radiobutton(self.frame1_2,text='Off',value=2,variable=self.Restore_mode_Value).pack(side=RIGHT)
+
 		# ========== Button (Catch / confirm) ============
 		self.frame1_6 = ttk.LabelFrame(self.frame1, text=' Catching / Confirm & Do Processing ')
 		self.frame1_6.pack(anchor='center')
@@ -247,7 +265,11 @@ class App:
 		path_ = askdirectory()
 		self.var_Path.set(str(path_))
 
-
+	# sliderbar's value update
+	def on_change_rotate_angle(self, value):
+		# update parameter                
+		self.rotate_angle = self.rotateAngle_bar_value.get()
+		# print(self.rotate_angle)
 	# sliderbar's value update
 	def on_change_x(self, value):
 		# update parameter                
@@ -302,6 +324,8 @@ class App:
 		idx=np.random.choice(len(self.POINT_CLOUD_SET_LIST),1 )
 		self.current_point_cloud=self.POINT_CLOUD_SET_LIST[idx]
 		self.current_point_cloud=np.squeeze(self.current_point_cloud,axis=0)
+		if(self.Rotate_with_angle_mode_Value.get()==1):
+			self.current_point_cloud=self.rotate_point_cloud_through_x_with_angle(self.current_point_cloud,self.rotate_angle)
 		print(self.current_point_cloud.shape)
 		# 清除圖片
 		self.ax.cla()
@@ -434,7 +458,7 @@ class App:
 		quit()
 	def loadModelNet40(self):
 		file_path_name=askopenfilenames()
-		self.path_labelText.set(file_path_name[0])
+		self.path_labelText.set(file_path_name[0].split('/')[-1])
 
 		# ModelNet40 official train/test split
 		TRAIN_FILES = provider.getDataFiles(file_path_name[0])
@@ -458,7 +482,7 @@ class App:
 	def loadMyOwnData(self):
 		# 這個方法用來load自己準備好的partial point cloud dataset
 		file_path_name=askopenfilenames()
-		self.path_labelText.set(file_path_name[0])
+		self.path_labelText.set(file_path_name[0].split('/')[-1])
 		point_cloud_collection=provider.load_h5_wo_label(file_path_name[0])
 		self.POINT_CLOUD_SET_LIST=point_cloud_collection
 		self.btn_loadModelNet40.configure(state='normal')
@@ -483,7 +507,23 @@ class App:
 									[0, sinval, cosval]])
 		rotated_data = np.dot(point_cloud.reshape((-1, 3)), rotation_matrix)
 		return rotated_data
-
+	def rotate_point_cloud_through_x_with_angle(self,point_cloud,angle):
+		""" Randomly rotate the point clouds to augument the dataset
+			rotation is per shape based along up direction
+			Input:
+			Nx3 array, point clouds
+			Return:
+			Nx3 array, point clouds
+		"""
+		rotated_data = np.zeros(point_cloud.shape, dtype=np.float32)
+		rotation_angle = -angle/180*np.pi
+		cosval = np.cos(rotation_angle)
+		sinval = np.sin(rotation_angle)
+		rotation_matrix = np.array([[1,0, 0 ],
+									[0, cosval, -sinval],
+									[0, sinval, cosval]])
+		rotated_data = np.dot(point_cloud.reshape((-1, 3)), rotation_matrix)
+		return rotated_data
 	def rotate_perturbation_point_cloud(self,pointcloud, angle_sigma=0.06, angle_clip=0.18):
 		""" Randomly perturb the point clouds by small rotations
 			Input:
