@@ -24,7 +24,6 @@ class App:
 		self.SAVE_PARTIAL_PCS_LIST=[]
 		self.MODE_LIST=[]
 		self.QUATERNION_LABEL_LIST=[]
-		self.rotate_angle=0
 		# Setting parameter
 		self.POINT_CLOUD_SET_LIST=np.asarray([])   #之後會用這個來抽point cloud model
 		self.current_pca_axis=np.asarray([])
@@ -82,14 +81,7 @@ class App:
 		self.Rotate_with_angle_mode_Value.set(1)
 		Radiobutton(self.rotate_with_angle_frame,text='On',value=1,variable=self.Rotate_with_angle_mode_Value).pack(side=LEFT)
 		Radiobutton(self.rotate_with_angle_frame,text='Off',value=2,variable=self.Rotate_with_angle_mode_Value).pack(side=RIGHT)
-					# ------- d -------
-		self.rotateAngle_bar_value = IntVar()
-		self.rotateAngle_bar_value.set(0)  # default value = 0
-		slider_x = Scale(self.mode_packing_frame,
-							from_=360, to=0,
-							label='d', variable=self.rotateAngle_bar_value, command=self.on_change_rotate_angle
-							)
-		slider_x.pack(padx=5, pady=10, side=LEFT)
+
 
 
 		# ============ Rotating_perturbation ===============
@@ -266,11 +258,6 @@ class App:
 		self.var_Path.set(str(path_))
 
 	# sliderbar's value update
-	def on_change_rotate_angle(self, value):
-		# update parameter                
-		self.rotate_angle = self.rotateAngle_bar_value.get()
-		# print(self.rotate_angle)
-	# sliderbar's value update
 	def on_change_x(self, value):
 		# update parameter                
 		self.x_angle = self.x_rot_bar_value.get()
@@ -325,7 +312,8 @@ class App:
 		self.current_point_cloud=self.POINT_CLOUD_SET_LIST[idx]
 		self.current_point_cloud=np.squeeze(self.current_point_cloud,axis=0)
 		if(self.Rotate_with_angle_mode_Value.get()==1):
-			self.current_point_cloud=self.rotate_point_cloud_through_x_with_angle(self.current_point_cloud,self.rotate_angle)
+			rotate_angle=np.random.randint(20,80,1)
+			self.current_point_cloud=self.rotate_point_cloud_through_x_with_angle(self.current_point_cloud,rotate_angle[0])
 		print(self.current_point_cloud.shape)
 		# 清除圖片
 		self.ax.cla()
