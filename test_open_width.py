@@ -19,12 +19,12 @@ def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_th
     # translate the point cloud but not divide the furthest length
     centroid = np.mean(point_cloud, axis=0)
     point_cloud -= centroid
-    show_centriod(point_cloud,"translate point cloud")
+    show_centriod(point_cloud,"")
 
     # pca_axis 是PCA坐標系到世界坐標系的旋轉矩陣
     new_point_cloud= np.dot(pca_axis,point_cloud.T)
 
-    # show_centriod(new_point_cloud.T,"PCA coordinate")
+    show_centriod(new_point_cloud.T,"")
 
     new_point_cloud=new_point_cloud.T*1000
     # mapping onto plane
@@ -51,7 +51,7 @@ def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_th
         plt.scatter(xm, ym, c='r',s=30)
         plt.scatter(filter_point[index_max,0], filter_point[index_max,1], c='r',s=30)
         plt.scatter(filter_point[index_min,0], filter_point[index_min,1], c='r',s=30)
-        plt.title("finger width should be:"+str(round(distance,2))+"mm")
+        # plt.title("finger width should be:"+str(round(distance,2))+"mm")
         plt.show()
 
     return distance
@@ -93,7 +93,9 @@ if __name__ == "__main__":
     fps_pcs=furthest_point_sampling(np.asarray(remove_pcd.points),point_number)
     print(fps_pcs.shape)
     # show_centriod(fps_pcs,"furthest point sampling")
-    origin_pcs_vec,_=cal_pca(fps_pcs,is_show=True,title="PCA")
+    origin_pcs_vec,_=cal_pca(fps_pcs,is_show=False,title="")
+    normalized_point=normalize_point_cloud(fps_pcs.copy())
+    visualize_q_pointnet(normalized_point,origin_pcs_vec,"Q-PointNet")
     # translate the point cloud but not divide the furthest length
     # centroid = np.mean(fps_pcs, axis=0)
     # fps_pcs -= centroid
@@ -101,3 +103,4 @@ if __name__ == "__main__":
     open_widht_length= open_width_algorithm(fps_pcs,origin_pcs_vec,isVisualize=True)
     print("-----------Gripper open width-----------")
     print("The width gripper should open: %f mm" %(open_widht_length))
+    

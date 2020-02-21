@@ -472,17 +472,17 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
     if is_show:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel('X Label(unit:m)')
-        ax.set_ylabel('Y Label(unit:m)')
-        ax.set_zlabel('Z Label(unit:m)')
-        ax.set_xlim3d(-1, 1)
-        ax.set_ylim3d(-1,1)
-        ax.set_zlim3d(-1,1)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlabel('Z')
+        # ax.set_xlim3d(-1, 1)
+        # ax.set_ylim3d(-1,1)
+        # ax.set_zlim3d(-1,1)
         plt.title(title)
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
         ax.scatter(xm, ym, zm, c='r',s=10)   
-        discount=1
+        discount=0.05
         print("*"*30)
         for length, vector in zip(pca.explained_variance_, pca.components_):
             ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
@@ -613,9 +613,9 @@ def visualize_q_pointnet(pointcloud,pca_axis,title):
     ax.set_ylabel('Y Label(unit:m)')
     ax.set_zlabel('Z Label(unit:m)')
     plt.title(title)
-    ax.set_xlim3d(-1, 1)
-    ax.set_ylim3d(-1,1)
-    ax.set_zlim3d(-1,1)
+    # ax.set_xlim3d(-1, 1)
+    # ax.set_ylim3d(-1,1)
+    # ax.set_zlim3d(-1,1)
     ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
     xm,ym,zm=get_centroid_from_pc(pointcloud)
     ax.scatter(xm, ym, zm, c='r',s=10)
@@ -626,7 +626,87 @@ def visualize_q_pointnet(pointcloud,pca_axis,title):
         ax.text((xm+vector[0])*discount,(ym+vector[1])*discount,(zm+vector[2])*discount , str(axis), color='red')
         discount/=3
     plt.show()
-
+# visualize q-pointnet with its pose and mode
+def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
+    """
+    input:
+        point cloud 1024X3 
+        axes: [-pca_x-]
+                [-pca_y-]
+                [-pca_z-]
+        type: np array
+        width: from open width algorithm
+        mode: two_finger_mode or three_finger_mode
+    return:
+        length of gripper would open 
+        (unit:mm)
+        because unit of the point cloud is meter, we need to change it into mm.
+    """
+    width=width/1000+0.01 #0.01是誤差容許範圍 除以1000換成米
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xlabel('X Label(unit:m)')
+    ax.set_ylabel('Y Label(unit:m)')
+    ax.set_zlabel('Z Label(unit:m)')
+    plt.title(title)
+    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
+    xm,ym,zm=get_centroid_from_pc(pointcloud)
+# ======================================================
+    if(mode=='two_finger_mode'):
+        # 計算夾爪位置
+        D_ready=0.05 #平移距離(可自由調整)
+        D_ready_list=np.asarray([0,0,-D_ready])
+        offset_position=np.dot(np.transpose(axes),D_ready_list)
+        # ax.scatter(offset_position[0], offset_position[1], offset_position[2], c='red',s=10)
+        D_wrist=0.07 #手腕位置
+        D_wrist_list=np.asarray([0,0,-D_wrist])
+        wrist_offset_position=np.dot(np.transpose(axes),D_wrist_list)
+        # ax.scatter(wrist_offset_position[0], wrist_offset_position[1], wrist_offset_position[2], c='red',s=10)
+        y_axis_half_width=axes[1]*width/2
+        finger_position_x=[xm-y_axis_half_width[0],offset_position[0]-y_axis_half_width[0],offset_position[0]+y_axis_half_width[0],xm+y_axis_half_width[0]]
+        finger_position_y=[ym-y_axis_half_width[1],offset_position[1]-y_axis_half_width[1],offset_position[1]+y_axis_half_width[1],ym+y_axis_half_width[1]]
+        finger_position_z=[zm-y_axis_half_width[2],offset_position[2]-y_axis_half_width[2],offset_position[2]+y_axis_half_width[2],zm+y_axis_half_width[2]]
+        ax.plot(finger_position_x, finger_position_y, finger_position_z, c='black')
+        ax.plot([wrist_offset_position[0],offset_position[0]],[wrist_offset_position[1],offset_position[1]],[wrist_offset_position[2],offset_position[2]], c='black')
+    elif(mode=='three_finger_mode'):
+        # 計算夾爪位置
+        D_ready=0.05 #平移距離(可自由調整)
+        D_ready_list=np.asarray([0,0,-D_ready])
+        offset_position=np.dot(np.transpose(axes),D_ready_list)
+        # ax.scatter(offset_position[0], offset_position[1], offset_position[2], c='red',s=10)
+        D_wrist=0.07 #手腕位置
+        D_wrist_list=np.asarray([0,0,-D_wrist])
+        wrist_offset_position=np.dot(np.transpose(axes),D_wrist_list)
+        # ax.scatter(wrist_offset_position[0], wrist_offset_position[1], wrist_offset_position[2], c='red',s=10)
+        y_axis_half_width=axes[1]*width/2
+        first_finger_position_x=[xm-y_axis_half_width[0],offset_position[0]-y_axis_half_width[0],offset_position[0]]
+        first_finger_position_y=[ym-y_axis_half_width[1],offset_position[1]-y_axis_half_width[1],offset_position[1]]
+        first_finger_position_z=[zm-y_axis_half_width[2],offset_position[2]-y_axis_half_width[2],offset_position[2]]
+        ax.plot(first_finger_position_x, first_finger_position_y, first_finger_position_z, c='black')
+        ax.plot([wrist_offset_position[0],offset_position[0]],[wrist_offset_position[1],offset_position[1]],[wrist_offset_position[2],offset_position[2]], c='black')
+        # second finger
+        r = R.from_euler('z',300, degrees=True)
+        r3=np.dot(np.transpose(axes),r.as_dcm())
+        pca_axis_after_rotating_60=r3.transpose()
+        y_axis_half_width_after60=pca_axis_after_rotating_60[1]*width/2
+        # ax.scatter(offset_position[0]+y_axis_half_width_after60[0], offset_position[1]+y_axis_half_width_after60[1], offset_position[2]+y_axis_half_width_after60[2], c='red',s=10)
+        # ax.scatter(xm+y_axis_half_width_after60[0],ym+y_axis_half_width_after60[1],zm+y_axis_half_width_after60[2], c='red',s=10)
+        second_finger_position_x=[offset_position[0],offset_position[0]+y_axis_half_width_after60[0],xm+y_axis_half_width_after60[0]]
+        second_finger_position_y=[offset_position[1],offset_position[1]+y_axis_half_width_after60[1],ym+y_axis_half_width_after60[1]]
+        second_finger_position_z=[offset_position[2],offset_position[2]+y_axis_half_width_after60[2],zm+y_axis_half_width_after60[2]]
+        ax.plot(second_finger_position_x, second_finger_position_y, second_finger_position_z, c='black')
+        # third finger
+        r = R.from_euler('z',60, degrees=True)
+        r3=np.dot(np.transpose(axes),r.as_dcm())
+        pca_axis_after_rotating_60=r3.transpose()
+        y_axis_half_width_after60=pca_axis_after_rotating_60[1]*width/2
+        # ax.scatter(offset_position[0]+y_axis_half_width_after60[0], offset_position[1]+y_axis_half_width_after60[1], offset_position[2]+y_axis_half_width_after60[2], c='red',s=10)
+        # ax.scatter(xm+y_axis_half_width_after60[0],ym+y_axis_half_width_after60[1],zm+y_axis_half_width_after60[2], c='red',s=10)
+        third_finger_position_x=[offset_position[0],offset_position[0]+y_axis_half_width_after60[0],xm+y_axis_half_width_after60[0]]
+        third_finger_position_y=[offset_position[1],offset_position[1]+y_axis_half_width_after60[1],ym+y_axis_half_width_after60[1]]
+        third_finger_position_z=[offset_position[2],offset_position[2]+y_axis_half_width_after60[2],zm+y_axis_half_width_after60[2]]
+        ax.plot(third_finger_position_x, third_finger_position_y, third_finger_position_z, c='black')
+    ax.scatter(xm, ym, zm, c='r',s=10)
 # ==========================================================
 # ignore this one
 def perform_hello_test():

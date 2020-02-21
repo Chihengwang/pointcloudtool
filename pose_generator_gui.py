@@ -230,7 +230,7 @@ class App:
 		self.symmetric_var.set('--------')
 		self.symmetric_status = ttk.Label(self.frame3, textvariable=self.symmetric_var,font=self.frame3_font).pack()
 
-		self.pc_set_number_label = ttk.Label(self.frame3, text="儲存的點雲數量: ",font=self.frame3_font).pack()
+		self.pc_set_number_label = ttk.Label(self.frame3, text="Saved set: ",font=self.frame3_font).pack()
 		self.pc_set_number_var = StringVar()
 		self.pc_set_number_var.set('--------')
 		self.pc_set_number_status = ttk.Label(self.frame3, textvariable=self.pc_set_number_var,font=self.frame3_font).pack()
@@ -576,5 +576,5 @@ class App:
 if __name__ == "__main__":
 # Create a window and pass it to the Application object
 # intialize the window in the first parameter.
-	App=App(Tk(), "夾爪姿態產生器")
+	App=App(Tk(), "Pose Annotation system")
 	App.window.mainloop()

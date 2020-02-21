@@ -93,6 +93,9 @@ Basic function for point cloud
 > 2020/2/9 GUI 更新：
 >> * 新增對x軸rotate的方法(為了增加資料多樣性)-->change pitch
 >> * 更改了路徑顯示的text
+> 2020/2/21 功能更新：
+>> * visualize_q_pointnet_with_mode可以用來顯示2指或者3指模式 隨著q-pointnet的
+>> mode and pose detection。並且寬度是藉由open width algorithm 預測
 --------------------------------------------------
 
 ### TODOLIST:

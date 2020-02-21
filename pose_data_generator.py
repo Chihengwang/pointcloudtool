@@ -69,9 +69,9 @@ def switch_pca_yz_axis(pca_vec,covarience):
 def draw_switch_result(pointcloud,pca_axis,covarience,title):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlabel('X Label(unit:m)')
-    ax.set_ylabel('Y Label(unit:m)')
-    ax.set_zlabel('Z Label(unit:m)')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
     plt.title(title)
     ax.set_xlim3d(-1, 1)
     ax.set_ylim3d(-1,1)
@@ -158,6 +158,7 @@ while(len(SAVE_PARTIAL_PCS_LIST)<LIST_NUMBER_OF_POINTCLOUD_SET):
                 break
             if(ROTATING_MODE):
                 current_data[i]=rotate_point_cloud_through_x_negative90(current_data[i]) #轉到z朝上
+            show_centriod(current_data[i],"original point cloud")
             cal_pca(current_data[i],False,title="original point cloud")
             # normalized the random normal vector(x,y,z) 
             # 盡量讓normal vector可以是我眼睛看出去的方向，所以才規定這些參數
@@ -177,6 +178,7 @@ while(len(SAVE_PARTIAL_PCS_LIST)<LIST_NUMBER_OF_POINTCLOUD_SET):
             partial_point_cloud=normalize_point_cloud(partial_point_cloud)
             partial_point_cloud=furthest_point_sampling(partial_point_cloud,NUMBER_OF_POINTS)
             # partial_point_cloud=rotate_perturbation_point_cloud(partial_point_cloud)
+            show_centriod(partial_point_cloud,"partial point cloud")
             pca_vec,covarience=cal_pca(partial_point_cloud,False,title="partial point cloud")
             print("-"*30)
             print("PCA的covarience為：")
@@ -193,7 +195,7 @@ while(len(SAVE_PARTIAL_PCS_LIST)<LIST_NUMBER_OF_POINTCLOUD_SET):
                 print("-"*30)
                 print("非對稱圖，其第一二軸var差距：%f" %(covarience[0]-covarience[1],))
                 print("-"*30)
-                pca_vec,covarience=cal_pca(partial_point_cloud,True,title="Non-symmetric point cloud")
+                pca_vec,covarience=cal_pca(partial_point_cloud,True,title="Asymmetric point cloud")
                 # draw_switch_result(partial_point_cloud,pca_vec,covarience,title="Non-symmetric point cloud")
             print(pca_vec)
             print("-"*30)
