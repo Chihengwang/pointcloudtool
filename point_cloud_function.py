@@ -649,8 +649,12 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
     ax.set_ylabel('Y Label(unit:m)')
     ax.set_zlabel('Z Label(unit:m)')
     plt.title(title)
+    # translate the point cloud but not divide the furthest length
+    centroid = np.mean(pointcloud, axis=0)
+    pointcloud -= centroid
     ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
     xm,ym,zm=get_centroid_from_pc(pointcloud)
+
 # ======================================================
     if(mode=='two_finger_mode'):
         # 計算夾爪位置
@@ -706,7 +710,10 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         third_finger_position_y=[offset_position[1],offset_position[1]+y_axis_half_width_after60[1],ym+y_axis_half_width_after60[1]]
         third_finger_position_z=[offset_position[2],offset_position[2]+y_axis_half_width_after60[2],zm+y_axis_half_width_after60[2]]
         ax.plot(third_finger_position_x, third_finger_position_y, third_finger_position_z, c='black')
+    else:
+        pass
     ax.scatter(xm, ym, zm, c='r',s=10)
+    plt.show()
 # ==========================================================
 # ignore this one
 def perform_hello_test():
