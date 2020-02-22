@@ -17,16 +17,19 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         because unit of the point cloud is meter, we need to change it into mm.
     """
     width=width/1000+0.01 #0.01是誤差容許範圍 除以1000換成米
-    fig = plt.figure()
+    fig = plt.figure(figsize=(3,3))
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlabel('X Label(unit:m)')
-    ax.set_ylabel('Y Label(unit:m)')
-    ax.set_zlabel('Z Label(unit:m)')
+    # ax.set_xlabel('X Label(unit:m)')
+    # ax.set_ylabel('Y Label(unit:m)')
+    # ax.set_zlabel('Z Label(unit:m)')
+    ax.set_xlim3d(-0.10, 0.10)
+    ax.set_ylim3d(-0.10, 0.10)
+    ax.set_zlim3d(-0.10, 0.10)
     plt.title(title)
     # translate the point cloud but not divide the furthest length
     centroid = np.mean(pointcloud, axis=0)
     pointcloud -= centroid
-    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
+    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='c',s=0.5)
     xm,ym,zm=get_centroid_from_pc(pointcloud)
 
 # ======================================================
@@ -36,7 +39,7 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         D_ready_list=np.asarray([0,0,-D_ready])
         offset_position=np.dot(np.transpose(axes),D_ready_list)
         # ax.scatter(offset_position[0], offset_position[1], offset_position[2], c='red',s=10)
-        D_wrist=0.07 #手腕位置
+        D_wrist=0.10 #手腕位置
         D_wrist_list=np.asarray([0,0,-D_wrist])
         wrist_offset_position=np.dot(np.transpose(axes),D_wrist_list)
         # ax.scatter(wrist_offset_position[0], wrist_offset_position[1], wrist_offset_position[2], c='red',s=10)
@@ -52,7 +55,7 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         D_ready_list=np.asarray([0,0,-D_ready])
         offset_position=np.dot(np.transpose(axes),D_ready_list)
         # ax.scatter(offset_position[0], offset_position[1], offset_position[2], c='red',s=10)
-        D_wrist=0.07 #手腕位置
+        D_wrist=0.10 #手腕位置
         D_wrist_list=np.asarray([0,0,-D_wrist])
         wrist_offset_position=np.dot(np.transpose(axes),D_wrist_list)
         # ax.scatter(wrist_offset_position[0], wrist_offset_position[1], wrist_offset_position[2], c='red',s=10)
@@ -88,6 +91,7 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         pass
     ax.scatter(xm, ym, zm, c='r',s=10)
 
+    plt.tight_layout()
     plt.show()
 if __name__ == "__main__":
     dirname='./pointnet_data'
@@ -96,7 +100,7 @@ if __name__ == "__main__":
     # 貧果：14-12-2019-14-56-32.ply,02-01-2020-14-38-31
     # tape: 06-12-2019-15-29-40.ply,02-01-2020-14-29-18,02-01-2020-14-23-58
     # 杯子：14-12-2019-14-33-52.ply,02-01-2020-14-55-34
-    filename='06-12-2019-15-29-40.ply'
+    filename='14-12-2019-14-33-52.ply'
     # show_ply_file(dirname,filename)
     pcs=o3d.io.read_point_cloud(dirname+"/"+filename)
 
@@ -121,7 +125,7 @@ if __name__ == "__main__":
     print(np.asarray(remove_pcd.points).shape)
 
     print("fps-----------------------------------------")
-    point_number=1024
+    point_number=256
     fps_pcs=furthest_point_sampling(np.asarray(remove_pcd.points),point_number)
     print(fps_pcs.shape)
     origin_pcs_vec,_=cal_pca(fps_pcs.copy(),is_show=False,title="")
@@ -130,6 +134,6 @@ if __name__ == "__main__":
     normalized_point=normalize_point_cloud(np.copy(fps_pcs))
     # visualize_q_pointnet(normalized_point,origin_pcs_vec,"Q-PointNet")
     
-    visualize_q_pointnet_with_mode(fps_pcs,origin_pcs_vec,open_widht_length,FINGER_MODE_LIST[1],"Q-PointNet with mode")
+    visualize_q_pointnet_with_mode(fps_pcs,origin_pcs_vec,open_widht_length,FINGER_MODE_LIST[0],"")
 
 
