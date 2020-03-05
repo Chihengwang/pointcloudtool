@@ -46,12 +46,14 @@ def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_th
     distance_vector=filter_point[index_max,:2]-filter_point[index_min,:2]
     distance=np.linalg.norm(distance_vector)
     if(isVisualize):
+        fig = plt.figure(figsize=(3,3))
         plt.scatter(filter_point[:,0], filter_point[:,1], c='g',s=50)#繪製散佈圖
         plt.scatter(new_point_cloud[:,0], new_point_cloud[:,1],c='b',s=8)#繪製散佈圖
         plt.scatter(xm, ym, c='r',s=30)
         plt.scatter(filter_point[index_max,0], filter_point[index_max,1], c='r',s=30)
         plt.scatter(filter_point[index_min,0], filter_point[index_min,1], c='r',s=30)
         # plt.title("finger width should be:"+str(round(distance,2))+"mm")
+        plt.tight_layout()
         plt.show()
 
     return distance
@@ -89,13 +91,13 @@ if __name__ == "__main__":
     print(np.asarray(remove_pcd.points).shape)
 
     print("fps-----------------------------------------")
-    point_number=1024
+    point_number=256
     fps_pcs=furthest_point_sampling(np.asarray(remove_pcd.points),point_number)
     print(fps_pcs.shape)
     # show_centriod(fps_pcs,"furthest point sampling")
     origin_pcs_vec,_=cal_pca(fps_pcs,is_show=False,title="")
     normalized_point=normalize_point_cloud(fps_pcs.copy())
-    visualize_q_pointnet(normalized_point,origin_pcs_vec,"Q-PointNet")
+    visualize_q_pointnet(fps_pcs.copy(),origin_pcs_vec,"")
     # translate the point cloud but not divide the furthest length
     # centroid = np.mean(fps_pcs, axis=0)
     # fps_pcs -= centroid

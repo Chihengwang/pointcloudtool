@@ -96,6 +96,9 @@ Basic function for point cloud
 > 2020/2/21 功能更新：
 >> * visualize_q_pointnet_with_mode可以用來顯示2指或者3指模式 隨著q-pointnet的
 >> mode and pose detection。並且寬度是藉由open width algorithm 預測
+> 2020/3/5 功能更新：
+>> * 更新gui的功能 讓每個model都可以被看過
+>> * point_cloud_function 更新
 --------------------------------------------------
 
 ### TODOLIST:

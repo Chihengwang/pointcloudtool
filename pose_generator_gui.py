@@ -31,7 +31,7 @@ class App:
 		self.current_point_cloud=np.asarray([])
 		self.current_partial_point_cloud=np.asarray([])
 		self.covarience=np.asarray([])
-
+		self.display_count=0
 		# point 數量
 		self.NUMBER_OF_POINTS = 1024
 		# 切割面的閥值
@@ -308,8 +308,16 @@ class App:
 		self.z_rot_bar_value.set(0)
 		# randomly pick one point cloud from the set
 		print("start catching mode")
-		idx=np.random.choice(len(self.POINT_CLOUD_SET_LIST),1 )
-		self.current_point_cloud=self.POINT_CLOUD_SET_LIST[idx]
+		# idx=np.random.choice(len(self.POINT_CLOUD_SET_LIST),1 )
+		# print(idx)
+		# self.current_point_cloud=self.POINT_CLOUD_SET_LIST[idx]
+		# 這邊是取所有資料==========
+		print(self.idxs[self.display_count])
+		self.current_point_cloud=self.POINT_CLOUD_SET_LIST[[self.idxs[self.display_count]]]
+		self.display_count+=1
+		if(self.display_count==len(self.POINT_CLOUD_SET_LIST)):
+			self.display_count=0
+		# 這邊是取所有資料==========
 		self.current_point_cloud=np.squeeze(self.current_point_cloud,axis=0)
 		if(self.Rotate_with_angle_mode_Value.get()==1):
 			rotate_angle=np.random.randint(20,80,1)
@@ -447,7 +455,7 @@ class App:
 	def loadModelNet40(self):
 		file_path_name=askopenfilenames()
 		self.path_labelText.set(file_path_name[0].split('/')[-1])
-
+		self.display_count=0
 		# ModelNet40 official train/test split
 		TRAIN_FILES = provider.getDataFiles(file_path_name[0])
 		# Shuffle train files
@@ -462,6 +470,9 @@ class App:
 			else:
 				point_cloud_collection=np.vstack((point_cloud_collection,current_data))
 		self.POINT_CLOUD_SET_LIST=point_cloud_collection
+		self.idxs=np.arange(0,len(self.POINT_CLOUD_SET_LIST))
+		print(self.idxs)
+		np.random.shuffle(self.idxs)
 		# Load model 進來後停止使用此button
 		self.btn_loadModelNet40.configure(state='disabled')
 		self.btn_loadMyOwnData.configure(state='normal')
@@ -473,6 +484,10 @@ class App:
 		self.path_labelText.set(file_path_name[0].split('/')[-1])
 		point_cloud_collection=provider.load_h5_wo_label(file_path_name[0])
 		self.POINT_CLOUD_SET_LIST=point_cloud_collection
+		self.idxs=np.arange(0,len(self.POINT_CLOUD_SET_LIST))
+		np.random.shuffle(self.idxs)
+		print(self.idxs)
+		self.display_count=0
 		self.btn_loadModelNet40.configure(state='normal')
 		self.btn_loadMyOwnData.configure(state='disabled')
 		self.Confirm_btn.configure(state='disabled')

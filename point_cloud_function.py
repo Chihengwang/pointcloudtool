@@ -245,18 +245,20 @@ input:
 xyz_points:numpy
 """
 def show_centriod(xyz_points,title_name):
+    fig = plt.figure(figsize=(3,3))
     x_mean,y_mean,z_mean=get_centroid_from_pc(xyz_points)
     ax = plt.subplot(111, projection='3d')  # 创建一个三维的绘图工程
     #  将数据点分成三部分画，在颜色上有区分度
     ax.scatter(xyz_points[:,0], xyz_points[:,1], xyz_points[:,2], c='b',s=1)  # 绘制数据点
     ax.scatter(x_mean, y_mean, z_mean, c='r',s=10)
-    ax.set_zlabel('Z')  # 坐标轴
-    ax.set_ylabel('Y')
-    ax.set_xlabel('X')
+    # ax.set_zlabel('Z')  # 坐标轴
+    # ax.set_ylabel('Y')
+    # ax.set_xlabel('X')
     # ax.set_xlim3d(-1, 1)
     # ax.set_ylim3d(-1,1)
     # ax.set_zlim3d(-1,1)
     plt.title(title_name)
+    plt.tight_layout()
     plt.show()
 """
 Normalizing the point cloud into the unit sphere
@@ -470,11 +472,11 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
         r3=np.dot(pca.components_.transpose(),r.as_dcm().astype(int))
         pca.components_=r3.transpose()
     if is_show:
-        fig = plt.figure()
+        fig = plt.figure(figsize=(3,3))
         ax = fig.add_subplot(111, projection='3d')
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_zlabel('Z')
+        # ax.set_xlabel('X')
+        # ax.set_ylabel('Y')
+        # ax.set_zlabel('Z')
         # ax.set_xlim3d(-1, 1)
         # ax.set_ylim3d(-1,1)
         # ax.set_zlim3d(-1,1)
@@ -482,12 +484,12 @@ def cal_pca(point_cloud,is_show=False,desired_num_of_feature=3,title="pca demo")
         ax.scatter(point_cloud[:,0], point_cloud[:,1], point_cloud[:,2], c='y',s=1)
         xm,ym,zm=get_centroid_from_pc(point_cloud)
         ax.scatter(xm, ym, zm, c='r',s=10)   
-        discount=0.05
+        discount=1
         print("*"*30)
         for length, vector in zip(pca.explained_variance_, pca.components_):
             ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
             discount/=3
-
+        plt.tight_layout()
         plt.show()
     return pca.components_,pca.explained_variance_
 # ==========================================================
@@ -594,37 +596,40 @@ def open_width_algorithm(point_cloud,pca_axis,isVisualize=False,inner_product_th
     distance_vector=filter_point[index_max,:2]-filter_point[index_min,:2]
     distance=np.linalg.norm(distance_vector)
     if(isVisualize):
+        fig = plt.figure()
         plt.scatter(filter_point[:,0], filter_point[:,1], c='g',s=50)#繪製散佈圖
         plt.scatter(new_point_cloud[:,0], new_point_cloud[:,1],c='b',s=8)#繪製散佈圖
         plt.scatter(xm, ym, c='r',s=30)
         plt.scatter(filter_point[index_max,0], filter_point[index_max,1], c='r',s=30)
         plt.scatter(filter_point[index_min,0], filter_point[index_min,1], c='r',s=30)
         plt.title("finger width should be:"+str(round(distance,2))+"mm")
+        plt.tight_layout()
         plt.show()
 
     return distance
 # ==========================================================
 # visualize the result of partial point cloud and pca
-def visualize_q_pointnet(pointcloud,pca_axis,title):
-    axis_name=['pca_x','pca_y','pca_z']
-    fig = plt.figure()
+def visualize_q_pointnet(pointcloud,pose_axis,title):
+    axis_name=['pose_x','pose_y','pose_z']
+    fig = plt.figure(figsize=(3,3))
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xlabel('X Label(unit:m)')
-    ax.set_ylabel('Y Label(unit:m)')
-    ax.set_zlabel('Z Label(unit:m)')
+    # ax.set_xlabel('X Label(unit:m)')
+    # ax.set_ylabel('Y Label(unit:m)')
+    # ax.set_zlabel('Z Label(unit:m)')
     plt.title(title)
     # ax.set_xlim3d(-1, 1)
     # ax.set_ylim3d(-1,1)
     # ax.set_zlim3d(-1,1)
-    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='y',s=1)
+    ax.scatter(pointcloud[:,0], pointcloud[:,1], pointcloud[:,2], c='b',s=1)
     xm,ym,zm=get_centroid_from_pc(pointcloud)
     ax.scatter(xm, ym, zm, c='r',s=10)
-    discount=1
-    for vector,axis in zip(pca_axis,axis_name):
+    discount=0.07
+    for vector,axis in zip(pose_axis,axis_name):
         print(vector)
         ax.quiver(xm,ym,zm,vector[0],vector[1],vector[2], length=discount)
         ax.text((xm+vector[0])*discount,(ym+vector[1])*discount,(zm+vector[2])*discount , str(axis), color='red')
         discount/=3
+    plt.tight_layout()
     plt.show()
 # visualize q-pointnet with its pose and mode
 def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
@@ -634,6 +639,7 @@ def visualize_q_pointnet_with_mode(pointcloud,axes,width,mode,title):
         axes: [-pca_x-]
                 [-pca_y-]
                 [-pca_z-]
+            or from Q-PointNet. But it needs to be transposed.
         type: np array
         width: from open width algorithm
         mode: two_finger_mode or three_finger_mode
